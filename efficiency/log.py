@@ -30,8 +30,11 @@ def fread(path):
         return f.readlines()
 
 
-def show_time():
-    print('⏰\ttime:', datetime.datetime.now().strftime('%m%d%H%M-%S'))
+def show_time(what_happens=''):
+    disp = '⏰\ttime: ' + \
+        datetime.datetime.now().strftime('%m%d%H%M-%S')
+    disp = disp + '\t' + what_happens if what_happens else disp
+    print(disp)
 
 
 def bug():
