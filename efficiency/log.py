@@ -9,9 +9,10 @@ import os.path
 import datetime
 
 
-def debug(expression):
-    frame = sys._getframe(1)
-    print(expression, ':', repr(eval(expression, frame.f_globals, frame.f_locals)))
+def show_var(expression):
+    for i in expression:
+        frame = sys._getframe(1)
+        print(i, ':', repr(eval(i, frame.f_globals, frame.f_locals)))
 
 
 def write_var(var, path='data/debug/var'):
@@ -35,6 +36,7 @@ def show_time(what_happens=''):
         datetime.datetime.now().strftime('%m%d%H%M-%S')
     disp = disp + '\t' + what_happens if what_happens else disp
     print(disp)
+    return datetime.datetime.now().strftime('%m%d%H%M')
 
 
 def bug():
