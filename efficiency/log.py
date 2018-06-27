@@ -31,7 +31,7 @@ def fread(path):
 
 
 def show_time():
-    print('⏰ time:', datetime.datetime.now().strftime('%m%d%H%M-%S'))
+    print('⏰\ttime:', datetime.datetime.now().strftime('%m%d%H%M-%S'))
 
 
 def bug():
