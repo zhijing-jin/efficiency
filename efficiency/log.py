@@ -45,3 +45,17 @@ def bug():
     # you can use "c" for continue, "p variable", "p locals", "n" for next
     # you can use "!a += 1" for changes of variables
     # you can use "import code; code.interact(local=locals)" to iPython with all variables
+
+
+def shell(cmd, show_res=False):
+    import sys
+    import os
+    import subprocess
+    from subprocess import PIPE, Popen
+
+    subp = Popen(cmd, shell=True, stdout=PIPE, stderr=subprocess.STDOUT)
+    subp_output = subp.communicate()[0]
+
+    if show_res:
+        print("Here is the output:", subp_output, "[[end]]")
+    return subp_output
