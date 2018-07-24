@@ -22,6 +22,9 @@ def write_var(var, path='data/debug/var'):
 
 
 def fwrite(new_doc, path):
+    if not path:
+        print("[Info] Path does not exist in fwrite():", str(path))
+        return
     with open(path, 'w') as f:
         f.write(new_doc)
 
@@ -59,3 +62,15 @@ def shell(cmd, show_res=False):
     if show_res:
         print("Here is the output:", subp_output, "[[end]]")
     return subp_output
+
+
+def mproc(func, input_list, avail_cpu=8):
+    '''
+    This is a multiprocess function where you execute the function with 
+    every input in the input_list simutaneously.
+    @ return output_list: the list of outputs w.r.t. input_list
+    '''
+    from multiprocessing import Pool
+    pool = Pool(processes=min(len(input_list), avail_cpu))
+    output_list = pool.map(func, input_list)
+    return output_list
