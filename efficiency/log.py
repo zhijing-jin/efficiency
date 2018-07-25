@@ -7,12 +7,15 @@ import sys
 import argparse
 import os.path
 import datetime
+import pprint
+import json
 
 
 def show_var(expression):
     for i in expression:
         if inspect.isclass(X):
             i = vars(i)
+            i = json.dumps(i, indent=2)
         frame = sys._getframe(1)
         print(i, ':', repr(eval(i, frame.f_globals, frame.f_locals)))
 
