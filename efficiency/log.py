@@ -11,6 +11,8 @@ import datetime
 
 def show_var(expression):
     for i in expression:
+        if inspect.isclass(X):
+            i = vars(i)
         frame = sys._getframe(1)
         print(i, ':', repr(eval(i, frame.f_globals, frame.f_locals)))
 
