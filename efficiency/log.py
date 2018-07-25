@@ -7,17 +7,25 @@ import sys
 import argparse
 import os.path
 import datetime
+
 import pprint
 import json
+import pdb
+import inspect
 
 
 def show_var(expression):
+
     for i in expression:
-        if inspect.isclass(X):
-            i = vars(i)
-            i = json.dumps(i, indent=2)
         frame = sys._getframe(1)
-        print(i, ':', repr(eval(i, frame.f_globals, frame.f_locals)))
+        value = eval(i, frame.f_globals, frame.f_locals)
+
+        if ' object at ' in repr(value):
+            value = vars(value)
+            value = json.dumps(value, indent=2)
+            print(i, ':', value)
+        else:
+            print(i, ':', repr(value))
 
 
 def write_var(var, path='data/debug/var'):
