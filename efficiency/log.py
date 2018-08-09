@@ -13,6 +13,8 @@ import json
 import pdb
 import inspect
 
+import multiprocessing
+
 
 def show_var(expression):
 
@@ -77,7 +79,7 @@ def shell(cmd, show_res=False):
     return subp_output
 
 
-def mproc(func, input_list, avail_cpu=8):
+def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
     '''
     This is a multiprocess function where you execute the function with 
     every input in the input_list simutaneously.
