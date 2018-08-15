@@ -2,7 +2,7 @@ import multiprocessing
 
 
 def reorder(_x, order):
-    x = range(len(_x))
+    x = _x[:]
     for i, a in zip(order, _x):
         x[i] = a
     return x
