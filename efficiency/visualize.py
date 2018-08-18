@@ -1,4 +1,5 @@
 from efficiency.log import show_var
+import pdb
 
 
 def heatmap2np(matrix=None, xticks=[], yticks=[], xlabel='', ylabel='', title='', image_name="", decimals=1, on_server=True):
@@ -10,8 +11,6 @@ def heatmap2np(matrix=None, xticks=[], yticks=[], xlabel='', ylabel='', title=''
     import matplotlib.pyplot as plt
     from pandas import DataFrame
     import seaborn
-
-    pdb.set_trace()
 
     if (not (type(matrix) is np.ndarray)) and (not xticks) and (not yticks):
 
