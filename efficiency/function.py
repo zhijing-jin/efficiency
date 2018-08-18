@@ -1,4 +1,5 @@
 import multiprocessing
+from log import show_var
 
 
 def reorder(_x, order):
@@ -12,18 +13,21 @@ def do_nothing(a):
     return a
 
 
-def shell(cmd, show_res=False):
+def shell(cmd, working_directory='.', stdout=False, stderr=False):
     import sys
     import os
     import subprocess
     from subprocess import PIPE, Popen
 
-    subp = Popen(cmd, shell=True, stdout=PIPE, stderr=subprocess.STDOUT)
-    subp_output = subp.communicate()[0]
+    subp = Popen(cmd, shell=True, stdout=PIPE, stderr=subprocess.STDOUT, cwd=working_directory)
+    subp_stdout, subp_stderr = subp.communicate()
 
-    if show_res:
-        print("Here is the output:", subp_output, "[[end]]")
-    return subp_output
+    if stdout and subp_stdout:
+        print("[stdout]", subp_stdout, "[end]")
+    if stderr and subp_stderr:
+        print("[stderr]", subp_stderr, "[end]")
+
+    return subp_stdout
 
 
 def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
