@@ -11,7 +11,9 @@ def heatmap2np(matrix=None, xticks=[], yticks=[], xlabel='', ylabel='', title=''
     from pandas import DataFrame
     import seaborn
 
-    if (not matrix) and (not xticks) and (not yticks):
+    pdb.set_trace()
+
+    if (not (type(matrix) is np.ndarray)) and (not xticks) and (not yticks):
 
         yticks = ["cucumber", "tomato", "lettuce", "asparagus",
                   "potato", "wheat", "barley"]
