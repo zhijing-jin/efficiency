@@ -1,5 +1,5 @@
 import multiprocessing
-from log import show_var
+from efficiency.log import show_var
 
 
 def reorder(_x, order):
