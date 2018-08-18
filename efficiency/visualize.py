@@ -1,5 +1,7 @@
-from efficiency.log import show_var
+
 import pdb
+import numpy as np
+from efficiency.log import show_var
 
 
 def heatmap2np(matrix=None, xticks=[], yticks=[], xlabel='', ylabel='', title='', image_name="", decimals=1, on_server=True):
