@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import division, print_function
 from datetime import datetime
 import pdb
 from function import shell
@@ -26,14 +28,14 @@ def get_format(text):
 
 def transform(text, old_format, new_format, this_year=datetime.today().year):
     d = datetime.strptime(text, old_format)
-    d = d.replace(year=this_year) if d.year == 1900 else d.year
+    d = d.replace(year=this_year) if d.year == 1900 else d.replace(year=d.year)
     return d.strftime(new_format)
 
 
 def parse_filename(filename):
     root, suffix = filename.rsplit('.', 1)
     suffix = suffix.lower()
-    assert suffix in ['jpg', 'png', 'mov'], filename + " is not a photo/video file!"
+    assert suffix in ['jpg', 'png', 'mov', 'mp4', 'gif'], filename + " is not a photo/video file!"
     root = root.rsplit(' (')[0]
 
     old_format = get_format(root)
@@ -46,7 +48,40 @@ def parse_filename(filename):
 
 def rename(folders):
 
-    folders = ['/Users/Fascinating/Dropbox (MIT)/LifeTrace/image/temp']
+    folders = [
+                
+
+                '/Users/maggie0/Downloads/20180201_KidsChurch',
+'/Users/maggie0/Downloads/20180207_Yilun',
+'/Users/maggie0/Downloads/20180601_Kavish',
+'/Users/maggie0/Downloads/20180601_Lab',
+'/Users/maggie0/Downloads/20180601_Summer',
+'/Users/maggie0/Downloads/20180615_JinDiBirthday',
+'/Users/maggie0/Downloads/20180616_BrokenPhone',
+'/Users/maggie0/Downloads/20180624_HarvardNaturalHistory',
+'/Users/maggie0/Downloads/20180629_DanceParty',
+'/Users/maggie0/Downloads/20180701_Pika',
+'/Users/maggie0/Downloads/20180704_Fireworks',
+'/Users/maggie0/Downloads/20180707_SeattleWithYilun',
+'/Users/maggie0/Downloads/20180715_KTV',
+'/Users/maggie0/Downloads/20180716_Kayak',
+'/Users/maggie0/Downloads/20180718_WenbingBirthday',
+'/Users/maggie0/Downloads/20180721_Tanglewood',
+'/Users/maggie0/Downloads/20180725_Soccer',
+'/Users/maggie0/Downloads/20180727_KavishHomeMovie',
+'/Users/maggie0/Downloads/20180727_YangAndWinston',
+'/Users/maggie0/Downloads/20180728_PartyAtReginas',
+'/Users/maggie0/Downloads/20180729_Birthday',
+'/Users/maggie0/Downloads/20180731_NightTalkWithJinDi',
+'/Users/maggie0/Downloads/20180801_Farewell4West',
+'/Users/maggie0/Downloads/20180801_FarewellLab',
+'/Users/maggie0/Downloads/20180801_FarewellMIT',
+'/Users/maggie0/Downloads/20180803_LaiKingCourt',
+'/Users/maggie0/Downloads/20180803_MorningHK',
+'/Users/maggie0/Downloads/20180805_TaiMoHiking',
+'/Users/maggie0/Downloads/20180810_RegDayHKU',
+'/Users/maggie0/Downloads/20180828_Jiang']
+    
     for folder in folders:
         files = [f for f in listdir(folder)
                  if isfile(join(folder, f)) and
