@@ -27,7 +27,7 @@ def shell(cmd, working_directory='.', stdout=False, stderr=False):
     if stderr and subp_stderr:
         print("[stderr]", subp_stderr, "[end]")
 
-    return subp_stdout
+    return subp_stdout, subp_stderr
 
 
 def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
