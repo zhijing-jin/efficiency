@@ -2,17 +2,6 @@ import multiprocessing
 from efficiency.log import show_var
 
 
-def reorder(_x, order):
-    x = list(range(len(_x)))
-    for i, a in zip(order, _x):
-        x[i] = a
-    return x
-
-
-def do_nothing(a):
-    return a
-
-
 def shell(cmd, working_directory='.', stdout=False, stderr=False):
     import sys
     import os
@@ -40,3 +29,10 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
     pool = Pool(processes=min(len(input_list), avail_cpu))
     output_list = pool.map(func, input_list)
     return output_list
+
+
+def reorder(_x, order):
+    x = list(range(len(_x)))
+    for i, a in zip(order, _x):
+        x[i] = a
+    return x
