@@ -57,6 +57,7 @@ def show_time(what_happens='', cat_server=False):
 
     if cat_server:
         hostname = socket.gethostname()
+        hostname = "rosetta3"
         prefix = "rosetta"
         if hostname.startswith(prefix):
             host_id = hostname[len(prefix):]
