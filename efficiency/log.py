@@ -60,7 +60,12 @@ def show_time(what_happens='', cat_server=False):
         prefix = "rosetta"
         if hostname.startswith(prefix):
             host_id = hostname[len(prefix):]
-            hostname = "{}{:2d}".format(prefix[0], host_id)
+            try:
+                host_id = int(host_id)
+                host_id = "{:02d}".format(host_id)
+            except:
+                pass
+            hostname = prefix[0] + host_id
         curr_time += hostname
     return curr_time
 
@@ -72,3 +77,6 @@ def bug():
     # you can use "!a += 1" for changes of variables
     # you can use "import code; code.interact(local=locals)" to iPython with
     # all variables
+if __name__ == "__main__":
+    t = show_time(cat_server=True)
+    print(t)
