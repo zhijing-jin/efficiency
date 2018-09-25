@@ -5,6 +5,8 @@ import random
 import numpy as np
 import sys
 import os.path
+import socket
+
 
 import pprint
 import pdb
@@ -44,14 +46,23 @@ def fread(path):
         return f.readlines()
 
 
-def show_time(what_happens=''):
+def show_time(what_happens='', cat_server=False):
     import datetime
 
     disp = '⏰\ttime: ' + \
         datetime.datetime.now().strftime('%m%d%H%M-%S')
     disp = disp + '\t' + what_happens if what_happens else disp
     print(disp)
-    return datetime.datetime.now().strftime('%m%d%H%M')
+    curr_time = datetime.datetime.now().strftime('%m%d%H%M')
+
+    if cat_server:
+        hostname = socket.gethostname()
+        prefix = "rosetta"
+        if hostname.startswith(prefix):
+            host_id = hostname[len(prefix):]
+            hostname = "{}{:2d}".format(prefix[0], host_id)
+        curr_time += hostname
+    return curr_time
 
 
 def bug():
@@ -59,4 +70,5 @@ def bug():
     pdb.set_trace()
     # you can use "c" for continue, "p variable", "p locals", "n" for next
     # you can use "!a += 1" for changes of variables
-    # you can use "import code; code.interact(local=locals)" to iPython with all variables
+    # you can use "import code; code.interact(local=locals)" to iPython with
+    # all variables
