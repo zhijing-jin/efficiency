@@ -46,13 +46,14 @@ def fread(path):
         return f.readlines()
 
 
-def show_time(what_happens='', cat_server=False):
+def show_time(what_happens='', cat_server=False, printout=True):
     import datetime
 
     disp = '⏰\ttime: ' + \
         datetime.datetime.now().strftime('%m%d%H%M-%S')
     disp = disp + '\t' + what_happens if what_happens else disp
-    print(disp)
+    if printout:
+        print(disp)
     curr_time = datetime.datetime.now().strftime('%m%d%H%M')
 
     if cat_server:
@@ -73,6 +74,7 @@ def show_time(what_happens='', cat_server=False):
 def bug():
     import pdb
     pdb.set_trace()
+
     # you can use "c" for continue, "p variable", "p locals", "n" for next
     # you can use "!a += 1" for changes of variables
     # you can use "import code; code.interact(local=locals)" to iPython with
