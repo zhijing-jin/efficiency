@@ -27,15 +27,30 @@ def show_var(expression):
             print(i, ':', repr(value))
 
 
+def torchsave(dic, path):
+    import torch
+    if os.path.isfile(path):
+        print('[Warn] tempering', path)
+        import pdb
+        pdb.set_trace()
+    print('[info] saving object to', path)
+    torch.save(dic, path)
+
+
 def write_var(var, path='data/debug/var'):
     with open(path, 'w') as f:
         f.write(path.split('/')[-1] +
                 ' = ' + repr(var) + '\n')
 
 
-def fwrite(new_doc, path):
+def fwrite(new_doc, path, no_overwrite=False):
     if not path:
         print("[Info] Path does not exist in fwrite():", str(path))
+        return
+    if no_overwrite and os.path.isfile(path):
+        print("[Error] pls choose whether to continue, as file already exists:", path)
+        import pdb
+        pdb.set_trace()
         return
     with open(path, 'w') as f:
         f.write(new_doc)
