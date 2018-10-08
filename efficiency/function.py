@@ -38,6 +38,7 @@ def reorder(_x, order):
     return x
 
 def load_yaml(yaml_filepath, dir_=None, op=lambda x:x):
+
     """
     Load a YAML configuration file.
 
@@ -50,6 +51,7 @@ def load_yaml(yaml_filepath, dir_=None, op=lambda x:x):
     cfg : dict
     """
     # Read YAML experiment definition file
+    import yaml
     def make_paths_absolute(dir_, cfg):
         """
         Make all values for keys ending with `_path` absolute to dir_.
