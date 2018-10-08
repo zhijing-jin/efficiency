@@ -37,7 +37,7 @@ def reorder(_x, order):
         x[i] = a
     return x
 
-def load_yaml(yaml_filepath, dir_=None, , op=lambda x:x):
+def load_yaml(yaml_filepath, dir_=None, op=lambda x:x):
     """
     Load a YAML configuration file.
 
