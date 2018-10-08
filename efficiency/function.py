@@ -1,6 +1,6 @@
 import multiprocessing
 from efficiency.log import show_var
-
+import os
 
 def shell(cmd, working_directory='.', stdout=False, stderr=False):
     import sys
@@ -36,3 +36,51 @@ def reorder(_x, order):
     for i, a in zip(order, _x):
         x[i] = a
     return x
+
+def load_yaml(yaml_filepath, dir_=None, , op=lambda x:x):
+    """
+    Load a YAML configuration file.
+
+    Parameters
+    ----------
+    yaml_filepath : str
+
+    Returns
+    -------
+    cfg : dict
+    """
+    # Read YAML experiment definition file
+    def make_paths_absolute(dir_, cfg):
+        """
+        Make all values for keys ending with `_path` absolute to dir_.
+
+        Parameters
+        ----------
+        dir_ : str
+        cfg : dict
+
+        Returns
+        -------
+        cfg : dict
+        """
+        for key in cfg.keys():
+            if key.endswith("_path") or key.endswith("_dir"):
+                cfg[key] = os.path.join(dir_, cfg[key])
+                cfg[key] = os.path.abspath(cfg[key])
+                if not os.path.exists(cfg[key]):
+                    print("[Warn] %s does not exist.", cfg[key])
+            if type(cfg[key]) is dict:
+                cfg[key] = make_paths_absolute(dir_, cfg[key])
+        return cfg
+
+
+    if dir_ is None:
+        dir_ = os.path.dirname(yaml_filepath)
+    with open(yaml_filepath, 'r') as stream:
+        cfg = yaml.load(stream)
+
+    cfg = op(cfg)
+
+    cfg = make_paths_absolute(dir_, cfg)
+    return cfg
+
