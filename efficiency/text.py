@@ -104,7 +104,10 @@ def stylize_text(text_pattern, conll_file, tag_ls,
                 word_text = "[{}]".format(word)
                 style = "background-color:{};".format(html_sym.bg_color[tag_i])
                 tag = soup_tag(soup, word_text, "b", style=style)
-                soup_ls += [tag]
+                style = "color:{};".format(html_sym.bg_color[tag_i])
+                sub_tag = soup_tag(
+                    soup, tag_type, "sub", style=style)
+                soup_ls += [tag, sub_tag]
                 break
         if not soup_ls:
             soup_ls += [word]
@@ -317,8 +320,8 @@ def get_args():
 if __name__ == "__main__":
 
     raw_n_html = [
-        ('data/03conll.train.c_w_d_dw_ds_sw_word_ibo_dic', '03conll.train.html'),
-        ('data/03conll.valid.c_w_d_dw_ds_sw_word_ibo_dic', '03conll.valid.html'),
+        ('data/03conll.train.c_w_d_dw_ds_sw_word_ibo_dic', 'demo/03conll.train.html'),
+        ('data/03conll.valid.c_w_d_dw_ds_sw_word_ibo_dic', 'demo/03conll.valid.html'),
         ('data/sample.c_w_d_dw_ds_sw_word_ibo_dic', 'dana.sample.html')
 
 
@@ -327,8 +330,8 @@ if __name__ == "__main__":
     ]
     args = get_args()
     if args.conll:
-        raw_n_html = [('data/{}.conll'.format(args.conll), 'conll.html')]
-    for conll_file, html_file in raw_n_html[-1:]:
+        raw_n_html = [('data/{}.conll'.format(args.conll), 'demo/conll.html')]
+    for conll_file, html_file in raw_n_html[1:2]:
         print("[Info] Visualizing {} into {}".format(conll_file, html_file))
         soup = conll2html(conll_file)
         fwrite(soup, html_file)

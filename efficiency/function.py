@@ -2,13 +2,15 @@ import multiprocessing
 from efficiency.log import show_var
 import os
 
+
 def shell(cmd, working_directory='.', stdout=False, stderr=False):
     import sys
     import os
     import subprocess
     from subprocess import PIPE, Popen
 
-    subp = Popen(cmd, shell=True, stdout=PIPE, stderr=subprocess.STDOUT, cwd=working_directory)
+    subp = Popen(cmd, shell=True, stdout=PIPE,
+                 stderr=subprocess.STDOUT, cwd=working_directory)
     subp_stdout, subp_stderr = subp.communicate()
 
     if stdout and subp_stdout:
@@ -37,8 +39,8 @@ def reorder(_x, order):
         x[i] = a
     return x
 
-def load_yaml(yaml_filepath, dir_=None, op=lambda x:x):
 
+def load_yaml(yaml_filepath, dir_=None, op=lambda x: x):
     """
     Load a YAML configuration file.
 
@@ -52,6 +54,7 @@ def load_yaml(yaml_filepath, dir_=None, op=lambda x:x):
     """
     # Read YAML experiment definition file
     import yaml
+
     def make_paths_absolute(dir_, cfg):
         """
         Make all values for keys ending with `_path` absolute to dir_.
@@ -75,14 +78,13 @@ def load_yaml(yaml_filepath, dir_=None, op=lambda x:x):
                 cfg[key] = make_paths_absolute(dir_, cfg[key])
         return cfg
 
-
     if dir_ is None:
         dir_ = os.path.dirname(yaml_filepath)
     with open(yaml_filepath, 'r') as stream:
-        cfg = yaml.load(stream)
+        cfg = yaml.safe_load(stream)
 
     cfg = op(cfg)
 
     cfg = make_paths_absolute(dir_, cfg)
-    return cfg
 
+    return cfg
