@@ -88,7 +88,7 @@ def show_time(what_happens='', cat_server=False, printout=True):
 
 def del_quote(string):
     cleaned = string.replace("'", "")
-    cleaned = string.replace("\"", "")
+    cleaned = cleaned.replace("\"", "")
     return cleaned
 
 
@@ -102,6 +102,6 @@ def bug():
     # you can use "import code; code.interact(local=locals)" to iPython with
     # all variables
 if __name__ == "__main__":
-    a = 'I "have" a dream'
-    print(a)
+    a = "some'std'"
+    print(a.replace("'", ""))
     print(del_quote(a))
