@@ -86,14 +86,22 @@ def show_time(what_happens='', cat_server=False, printout=True):
     return curr_time
 
 
+def del_quote(string):
+    cleaned = string.replace("'", "")
+    cleaned = string.replace("\"", "")
+    return cleaned
+
+
 def bug():
     import pdb
     pdb.set_trace()
+
 
     # you can use "c" for continue, "p variable", "p locals", "n" for next
     # you can use "!a += 1" for changes of variables
     # you can use "import code; code.interact(local=locals)" to iPython with
     # all variables
 if __name__ == "__main__":
-    t = show_time(cat_server=True)
-    print(t)
+    a = 'I "have" a dream'
+    print(a)
+    print(del_quote(a))
