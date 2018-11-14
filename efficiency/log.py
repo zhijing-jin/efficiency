@@ -82,6 +82,8 @@ def show_time(what_happens='', cat_server=False, printout=True):
             except:
                 pass
             hostname = prefix[0] + host_id
+        else:
+            hostname = hostname[0]
         curr_time += hostname
     return curr_time
 

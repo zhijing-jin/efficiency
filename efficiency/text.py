@@ -322,7 +322,12 @@ if __name__ == "__main__":
     raw_n_html = [
         ('data/03conll.train.c_w_d_dw_ds_sw_word_ibo_dic', 'demo/03conll.train.html'),
         ('data/03conll.valid.c_w_d_dw_ds_sw_word_ibo_dic', 'demo/03conll.valid.html'),
-        ('data/sample.c_w_d_dw_ds_sw_word_ibo_dic', 'dana.sample.html')
+        ('data/sample.c_w_d_dw_ds_sw_word_ibo_dic', 'dana.sample.html'),
+        ('data/lstm_encoder_errors.conll', 'demo/lstm_encoder_errors.html'),
+        ('data/cnn_encoder_errors.conll', 'demo/cnn_encoder_errors.html'),
+        ('data/common_sents_diff_error.conll',
+         'demo/common_sents_diff_error.html'),
+        ('data/common_sents_same_error.conll', 'demo/common_sents_same_error.html')
 
 
 
@@ -330,8 +335,9 @@ if __name__ == "__main__":
     ]
     args = get_args()
     if args.conll:
-        raw_n_html = [('data/{}.conll'.format(args.conll), 'demo/conll.html')]
-    for conll_file, html_file in raw_n_html[1:2]:
+        raw_n_html = [('data/{}.conll'.format(args.conll),
+                       'demo/{}.html'.format(args.conll))]
+    for conll_file, html_file in raw_n_html:
         print("[Info] Visualizing {} into {}".format(conll_file, html_file))
         soup = conll2html(conll_file)
         fwrite(soup, html_file)
