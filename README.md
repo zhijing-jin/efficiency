@@ -7,8 +7,8 @@ pip install --upgrade git+git://github.com/zhijing-jin/efficiency.git
 pip install --user -r requirements.txt
 ```
 
-## Inside Python
-```
+## Logging Shortcuts
+```python
 >>> from efficiency import log
 >>> time_stamp = log.show_time()
 ⏰	time: 11241933-41
@@ -18,4 +18,10 @@ pip install --user -r requirements.txt
 >>> log.fwrite(text, "temp.txt")
 ```
 
-
+## Useful Functions
+```python
+>>> from efficiency.function import shell
+>>> stdout, stderr = shell("cat temp.txt")
+>>> stdout
+b'This is handy!'
+```
