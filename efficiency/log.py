@@ -48,6 +48,8 @@ def show_var(expression: List[str],
 
     if joiner != '\n':
         output = "[Info] {}".format(joiner.join(var_output))
+    else:
+        output = joiner.join(var_output)
     print(output)
 
 
