@@ -121,7 +121,8 @@ def del_quote(string):
 
 
 def debug(what_to_debug=''):
-    print("[Info] start debugging {}".format(what_to_debug))
+    if what_to_debug:
+        print("[Info] start debugging {}".format(what_to_debug))
 
     import pdb
     pdb.set_trace()
