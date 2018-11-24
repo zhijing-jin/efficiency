@@ -22,9 +22,9 @@ def show_var(expression):
         if ' object at ' in repr(value):
             value = vars(value)
             value = json.dumps(value, indent=2)
-            print(i, ':', value)
+            print('{}: {}'.format(i, value))
         else:
-            print(i, ':', repr(value))
+            print('{}: {}'.format(i, repr(value)))
 
 
 def torchsave(dic, path):
@@ -97,7 +97,6 @@ def del_quote(string):
 def bug():
     import pdb
     pdb.set_trace()
-
 
     # you can use "c" for continue, "p variable", "p locals", "n" for next
     # you can use "!a += 1" for changes of variables
