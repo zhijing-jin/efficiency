@@ -11,20 +11,42 @@ import socket
 import pprint
 import pdb
 
+from typing import List
 
-def show_var(expression):
+
+def show_var(expression: List[str],
+             joiner: str='\n') -> None:
+    '''
+    Prints out the name and value of variables. 
+    Eg. if a variable with name `num` and value `1`,
+    it will print "num: 1\n"
+
+    Parameters
+    ----------
+    expression: ``List[str]``, required
+        A list of varible names string.
+
+    Returns
+    ----------
+        None
+    '''
+
     import json
 
-    for i in expression:
+    output = []
+
+    for var_str in expression:
         frame = sys._getframe(1)
-        value = eval(i, frame.f_globals, frame.f_locals)
+        value = eval(var_str, frame.f_globals, frame.f_locals)
 
         if ' object at ' in repr(value):
             value = vars(value)
             value = json.dumps(value, indent=2)
-            print('{}: {}'.format(i, value))
+            output += ['{}: {}'.format(var_str, value)]
         else:
-            print('{}: {}'.format(i, repr(value)))
+            output += ['{}: {}'.format(var_str, repr(value))]
+
+    print(joiner.join(output))
 
 
 def torchsave(dic, path):
@@ -94,7 +116,9 @@ def del_quote(string):
     return cleaned
 
 
-def bug():
+def debug(what_to_debug):
+    print("[Info] start debugging {}".format(what_to_debug))
+
     import pdb
     pdb.set_trace()
 
@@ -103,6 +127,10 @@ def bug():
     # you can use "import code; code.interact(local=locals)" to iPython with
     # all variables
 if __name__ == "__main__":
-    a = "some'std'"
-    print(a.replace("'", ""))
-    print(del_quote(a))
+    a = "something"
+    b = 1
+    show_var(["a", "b"], joiner=', ')
+
+    debug("show_var")
+
+    show_var(["c"])
