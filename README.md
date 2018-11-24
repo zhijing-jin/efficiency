@@ -3,8 +3,6 @@ This is a package of useful logging functions made by Zhijing.
 
 ## Installation
 ```
-pip install json2table
-conda install -c anaconda beautifulsoup4
 pip install --upgrade git+git://github.com/zhijing-jin/efficiency.git
 ```
 
