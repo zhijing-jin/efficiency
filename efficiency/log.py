@@ -120,7 +120,7 @@ def del_quote(string):
     return cleaned
 
 
-def debug(what_to_debug):
+def debug(what_to_debug=''):
     print("[Info] start debugging {}".format(what_to_debug))
 
     import pdb
