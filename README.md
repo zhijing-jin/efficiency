@@ -2,6 +2,7 @@
 This is a package of useful one-line logging functions made by Zhijing.
 
 ## Installation
+Requirement: Python 3
 ```
 pip install --upgrade git+git://github.com/zhijing-jin/efficiency.git
 pip install --user -r requirements.txt
