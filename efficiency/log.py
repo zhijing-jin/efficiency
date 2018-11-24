@@ -33,7 +33,7 @@ def show_var(expression: List[str],
 
     import json
 
-    output = []
+    var_output = []
 
     for var_str in expression:
         frame = sys._getframe(1)
@@ -42,11 +42,13 @@ def show_var(expression: List[str],
         if ' object at ' in repr(value):
             value = vars(value)
             value = json.dumps(value, indent=2)
-            output += ['{}: {}'.format(var_str, value)]
+            var_output += ['{}: {}'.format(var_str, value)]
         else:
-            output += ['{}: {}'.format(var_str, repr(value))]
+            var_output += ['{}: {}'.format(var_str, repr(value))]
 
-    print(joiner.join(output))
+    if joiner != '\n':
+        output = "[Info] {}".format(joiner.join(var_output))
+    print(output)
 
 
 def torchsave(dic, path):
