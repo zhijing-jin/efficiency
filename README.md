@@ -8,15 +8,22 @@ pip install --user -r requirements.txt
 ```
 
 ## Logging Shortcuts
+Logging time:
 ```python
 >>> from efficiency.log import show_time, fwrite
 >>> time_stamp = show_time()
 ⏰	time: 11241933-41
 >>> time_stamp
 '11241933' # means: Nov 24th, 19:33
+```
+Writing out to files by one line:
+```python
 >>> text = "This is handy!"
 >>> fwrite(text, "temp.txt")
+```
 
+Printing out variables (name + value) easily:
+```python
 >>> num1 = 7
 >>> num2 = 2
 >>> num3 = 9
