@@ -40,6 +40,10 @@ def reorder(_x, order):
     return x
 
 
+def if_same_len(num_list):
+    return len(set(num_list)) == 1
+
+
 def load_yaml(yaml_filepath, dir_=None, op=lambda x: x):
     """
     Load a YAML configuration file.
