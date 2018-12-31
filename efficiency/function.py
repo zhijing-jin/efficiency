@@ -33,20 +33,28 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
 
 
 def set_seed(seed=0):
-    import numpy as np
-    import torch
+
     import random
-    from efficiency.log import show_time
 
     if seed is None:
+        from efficiency.log import show_time
         seed = int(show_time())
     print("[Info] seed set to: {}".format(seed))
 
     random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
+    try:
+        import numpy as np
+        np.random.seed(seed)
+    except ImportError:
+        pass
+
+    try:
+        import torch
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+    except ImportError:
+        pass
 
 
 def reorder(_x, order):
@@ -110,5 +118,8 @@ def load_yaml(yaml_filepath, dir_=None, op=lambda x: x):
     return cfg
 
 if __name__ == "__main__":
+    import pdb
+    pdb.set_trace()
+    set_seed(0)
     print(if_same_len([3, 23, 3]))
     print(if_same_len([3, 3, 3]))
