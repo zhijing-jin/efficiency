@@ -35,6 +35,7 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
 def set_seed(seed=0):
     import numpy as np
     import torch
+    import random
     from efficiency.log import show_time
 
     if seed is None:
