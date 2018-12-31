@@ -1,5 +1,4 @@
 import multiprocessing
-from efficiency.log import show_var
 import os
 
 

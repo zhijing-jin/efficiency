@@ -8,8 +8,6 @@ import pdb
 
 from typing import List
 
-from efficiency.function import shell
-
 
 def show_var(expression: List[str],
              joiner: str='\n') -> None:
@@ -118,6 +116,7 @@ def del_quote(string):
 
 
 def gpu_mem(gpu_id=0):
+    from efficiency.function import shell
 
     line = 9 + gpu_id * 3
     cmd = "nvidia-smi | head -n {} | tail -n 1 | awk '{{print $9}}' | sed 's/MiB//' ".format(
