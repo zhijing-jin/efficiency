@@ -232,7 +232,7 @@ def conll_info(contents, field_w, field_g, conll_symb=ConllSymb()):
 
 
 def conll2html(conll_file, html_sym=HtmlSymb(), conll_symb=ConllSymb(),
-               soup=BeautifulSoup(features="html.parser"), field_w=1, field_g=-2, field_p=-1):
+               soup=BeautifulSoup(features="html.parser"), field_w=-3, field_g=-2, field_p=-1):
     with open(conll_file) as f:
         if conll_file.endswith(".c_w_d_dw_ds_sw_word_ibo_dic"):
             fields = f.readline().strip()

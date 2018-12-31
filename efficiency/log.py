@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, print_function
-import pickle
 import random
-import numpy as np
 import sys
 import os.path
 import socket
-
-
-import pprint
 import pdb
 
 from typing import List
+
+from efficiency.function import shell
 
 
 def show_var(expression: List[str],
@@ -120,6 +117,20 @@ def del_quote(string):
     return cleaned
 
 
+def gpu_mem(gpu_id=0):
+
+    line = 9 + gpu_id * 3
+    cmd = "nvidia-smi | head -n {} | tail -n 1 | awk '{{print $9}}' | sed 's/MiB//' ".format(
+        line)
+
+    stdout, stderr = shell(cmd)
+
+    stdout = stdout.strip()
+    mem = int(stdout) if stdout != b'' else None
+
+    return mem
+
+
 def debug(what_to_debug=''):
     if what_to_debug:
         print("[Info] start debugging {}".format(what_to_debug))
@@ -132,6 +143,7 @@ def debug(what_to_debug=''):
     # you can use "import code; code.interact(local=locals)" to iPython with
     # all variables
 if __name__ == "__main__":
+
     a = "something"
     b = 1
     show_var(["a", "b"], joiner=', ')

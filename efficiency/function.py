@@ -92,3 +92,7 @@ def load_yaml(yaml_filepath, dir_=None, op=lambda x: x):
     cfg = make_paths_absolute(dir_, cfg)
 
     return cfg
+
+if __name__ == "__main__":
+    print(if_same_len([3, 23, 3]))
+    print(if_same_len([3, 3, 3]))
