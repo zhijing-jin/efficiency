@@ -32,6 +32,22 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
     return output_list
 
 
+def set_seed(seed=0):
+    import numpy as np
+    import torch
+    from efficiency.log import show_time
+
+    if seed is None:
+        seed = int(show_time())
+    print("[Info] seed set to: {}".format(seed))
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+
+
 def reorder(_x, order):
     x = list(range(len(_x)))
     for i, a in zip(order, _x):
