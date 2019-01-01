@@ -40,7 +40,7 @@ num3 : 9
 4101 # Currently, GPU Memory of GPU #0 is 4101 MiB
 >>> from efficiency.function import set_seed
 >>> set_seed(0)
-[Info] seed set to: 0
+[Info] seed set to: 0 # set the seed for random, numpy and pytorch
 ```
 ## Useful Functions
 ```python
