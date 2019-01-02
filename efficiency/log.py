@@ -6,8 +6,6 @@ import os.path
 import socket
 import pdb
 
-from typing import List
-
 
 def show_var(expression,
              joiner):
