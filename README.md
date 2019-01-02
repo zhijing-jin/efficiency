@@ -9,7 +9,7 @@ pip install --user -r requirements.txt
 ```
 
 ## Logging Shortcuts
-Logging time:
+Obtain time:
 ```python
 >>> from efficiency.log import show_time, fwrite
 >>> time_stamp = show_time()
@@ -33,7 +33,15 @@ num1 : 7
 num2 : 2
 num3 : 9
 ```
-
+### ML-Related
+```python
+>>> from efficiency.log import gpu_mem
+>>> gpu_mem(gpu_id=0)
+4101 # Currently, GPU Memory of GPU #0 is 4101 MiB
+>>> from efficiency.function import set_seed
+>>> set_seed(0)
+[Info] seed set to: 0 # set the seed for random, numpy and pytorch
+```
 ## Useful Functions
 ```python
 >>> from efficiency.function import shell
