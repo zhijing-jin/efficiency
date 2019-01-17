@@ -7,9 +7,15 @@ class NoteTaker(object):
 
     def __init__(self, file):
         self.file = file
-        fwrite('', file)
+        self.content = []
+        fwrite(self._text(), file)
+
+    def _to_text(self):
+        return '\n'.join(self.content)
 
     def print(self, *expressions):
         expression = ' '.join(str(e) for e in expressions)
         print(expression)
-        fwrite(expression + '\n', self.file, mode='a')
+
+        self.content += [expression]
+        fwrite(self._text(), self.file, mode='a')
