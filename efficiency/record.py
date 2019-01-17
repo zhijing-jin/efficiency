@@ -10,7 +10,7 @@ class NoteTaker(object):
         self.content = []
         fwrite(self._text(), file)
 
-    def _to_text(self):
+    def _text(self):
         return '\n'.join(self.content)
 
     def print(self, *expressions):
