@@ -9,6 +9,6 @@ class NoteTaker(object):
         self.file = file
         fwrite('', file)
 
-    def print_n_save(expression):
+    def print(self, expression):
         print(expression)
         fwrite(expression + '\n', self.file, mode='a')
