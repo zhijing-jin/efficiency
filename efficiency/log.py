@@ -8,7 +8,7 @@ import pdb
 
 
 def show_var(expression,
-             joiner='\n'):
+             joiner='\n', print=print):
     '''
     Prints out the name and value of variables. 
     Eg. if a variable with name `num` and value `1`,
