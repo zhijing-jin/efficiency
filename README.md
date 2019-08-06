@@ -13,7 +13,7 @@ Obtain time:
 ```python
 >>> from efficiency.log import show_time, fwrite
 >>> time_stamp = show_time()
-⏰	time: 11241933-41
+	time: 11241933-41
 >>> time_stamp
 '11241933' # means: Nov 24th, 19:33
 ```
