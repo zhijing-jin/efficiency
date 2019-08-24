@@ -44,6 +44,7 @@ def show_var(expression,
     else:
         output = joiner.join(var_output)
     print(output)
+    return output
 
 
 def torchsave(dic, path):
