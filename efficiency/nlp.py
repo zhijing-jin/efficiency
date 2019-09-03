@@ -20,7 +20,14 @@ class NLP:
         if lower: text = text.lower()
         toks = [tok.text for tok in self.nlp.tokenizer(text)]
         return ' '.join(toks)
-
+    
+    def sent_bleu(ref_list, hyp):
+        from nltk.translate import bleu
+        from nltk.translate.bleu_score import SmoothingFunction
+        smoothie = SmoothingFunction().method4
+        refs = [ref.split() for ref in ref_list]
+        hyp = hyp.split()
+        return bleu(refs, hyp, smoothing_function=smoothie)
 
 def main():
     raw_text = 'Hello, world. Here are two people with M.A. degrees from UT Austin. This is Mr. Mike.'
