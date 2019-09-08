@@ -16,6 +16,8 @@ def shell(cmd, working_directory='.', stdout=False, stderr=False):
         print("[stdout]", subp_stdout, "[end]")
     if stderr and subp_stderr:
         print("[stderr]", subp_stderr, "[end]")
+    if subp_stdout: subp_stdout = subp_stdout.decode("utf-8") 
+    if subp_stderr: subp_stderr = subp_stderr.decode("utf-8") 
 
     return subp_stdout, subp_stderr
 
