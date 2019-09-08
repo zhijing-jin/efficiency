@@ -12,13 +12,14 @@ def shell(cmd, working_directory='.', stdout=False, stderr=False):
                  stderr=subprocess.STDOUT, cwd=working_directory)
     subp_stdout, subp_stderr = subp.communicate()
 
+    if subp_stdout: subp_stdout = subp_stdout.decode("utf-8") 
+    if subp_stderr: subp_stderr = subp_stderr.decode("utf-8") 
+        
     if stdout and subp_stdout:
         print("[stdout]", subp_stdout, "[end]")
     if stderr and subp_stderr:
         print("[stderr]", subp_stderr, "[end]")
-    if subp_stdout: subp_stdout = subp_stdout.decode("utf-8") 
-    if subp_stderr: subp_stderr = subp_stderr.decode("utf-8") 
-
+    
     return subp_stdout, subp_stderr
 
 
