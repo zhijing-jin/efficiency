@@ -37,7 +37,6 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
 
 def flatten_list(nested_list):
     from itertools import chain
-    assert isinstance(nested_list[0], list), "[Error] input is not a nested list"
     return list(chain.from_iterable(nested_list))
 
 
