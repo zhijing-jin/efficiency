@@ -40,14 +40,12 @@ def flatten_list(nested_list):
     return list(chain.from_iterable(nested_list))
 
 
-def set_seed(seed=0):
-
+def set_seed(seed=0, verbose=False):
     import random
 
     if seed is None:
-        from efficiency.log import show_time
         seed = int(show_time())
-    print("[Info] seed set to: {}".format(seed))
+    if verbose: print("[Info] seed set to: {}".format(seed))
 
     random.seed(seed)
     try:
