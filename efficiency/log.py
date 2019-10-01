@@ -88,7 +88,10 @@ def show_time(what_happens='', cat_server=False, printout=True):
         datetime.datetime.now().strftime('%m%d%H%M-%S')
     disp = disp + '\t' + what_happens if what_happens else disp
     if printout:
-        print(disp)
+        try:
+          print(disp)
+        except:
+          pass
     curr_time = datetime.datetime.now().strftime('%m%d%H%M')
 
     if cat_server:
