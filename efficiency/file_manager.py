@@ -7,10 +7,11 @@ from efficiency.log import show_var
 
 class FileManager():
 
-    def __init__(self, ext='.mp3'):
-        self.files = self.recurse_files(dirname(realpath(__file__)))
+    def __init__(self, dir=dirname(realpath(__file__))):
+        self.files = self.recurse_files(dir)
 
-    def recurse_files(self, folder, filter=lambda f: True):
+    @staticmethod
+    def recurse_files(folder, filter=lambda f: True):
         if isdir(folder):
             return [path.join(folder, f) for f in listdir(folder)
                     if filter(f)]
