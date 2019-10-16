@@ -76,9 +76,12 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False):
         f.write(new_doc)
 
 
-def fread(path):
+def fread(path, if_strip=False):
     with open(path, 'r') as f:
-        return f.readlines()
+        data = f.readlines()
+    if if_strip:
+        data = [line.strip() for line in data]
+    return data
 
 
 def show_time(what_happens='', cat_server=False, printout=True):
