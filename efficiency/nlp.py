@@ -6,7 +6,7 @@ class NLP:
     def __init__(self):
         import spacy
 
-        self.nlp = spacy.load('en', disable=['ner', 'parser', 'tagger'])
+        self.nlp = spacy.load('en_core_web_sm', disable=['ner', 'parser', 'tagger'])
         self.nlp.add_pipe(self.nlp.create_pipe('sentencizer'))
 
     def sent_tokenize(self, text):
