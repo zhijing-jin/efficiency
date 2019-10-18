@@ -11,7 +11,7 @@ setup(
     description='A package for efficient programming',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    install_requires=['numpy'],
+    install_requires=['spacy'],
     url='https://github.com/zhijing-jin/efficiency',
     author='Z',
     author_email='zhijing.jin@connect.hku.hk'
