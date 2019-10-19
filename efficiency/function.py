@@ -42,12 +42,14 @@ def flatten_list(nested_list):
 
 def set_seed(seed=0, verbose=False):
     import random
+    import os
 
     if seed is None:
         seed = int(show_time())
     if verbose: print("[Info] seed set to: {}".format(seed))
 
     random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
     try:
         import numpy as np
         np.random.seed(seed)
