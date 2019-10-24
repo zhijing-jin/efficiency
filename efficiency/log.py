@@ -114,6 +114,19 @@ def show_time(what_happens='', cat_server=False, printout=True):
     return curr_time
 
 
+def get_git_version():
+    import os
+    try:
+        import git
+    except ImportError:
+        os.system('pip install --user gitpython')
+        import git
+
+    repo = git.Repo(search_parent_directories=True)
+    sha = repo.head.object.hexsha
+    return sha
+  
+
 def del_quote(string):
     cleaned = string.replace("'", "")
     cleaned = cleaned.replace("\"", "")
