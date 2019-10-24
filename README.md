@@ -1,4 +1,5 @@
 # efficiency
+[![Pypi](https://img.shields.io/pypi/v/efficiency.svg)](https://pypi.org/project/efficiency)
 This is a package of useful one-line logging functions made by Zhijing.
 
 ## Installation
