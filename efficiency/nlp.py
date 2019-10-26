@@ -21,6 +21,7 @@ class NLP:
         toks = [tok.text for tok in self.nlp.tokenizer(text)]
         return ' '.join(toks)
     
+    @staticmethod
     def sent_bleu(ref_list, hyp):
         from nltk.translate import bleu
         from nltk.translate.bleu_score import SmoothingFunction
