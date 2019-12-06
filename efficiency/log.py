@@ -63,7 +63,8 @@ def write_var(var, path='data/debug/var'):
                 ' = ' + repr(var) + '\n')
 
 
-def fwrite(new_doc, path, mode='w', no_overwrite=False):
+def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=True):
+    import os
     if not path:
         print("[Info] Path does not exist in fwrite():", str(path))
         return
@@ -72,6 +73,7 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False):
         import pdb
         pdb.set_trace()
         return
+    if verbose: print('[Info] Writing {} lines into {}'.format(new_doc.count('\n') + 1, path))
     with open(path, mode) as f:
         f.write(new_doc)
 
