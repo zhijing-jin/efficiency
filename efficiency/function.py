@@ -73,6 +73,16 @@ def reorder(_x, order):
     return x
 
 
+def avg(num_list, decimal=2):
+    if not len(num_list):
+        return 0
+
+    import numpy as np
+    mean = np.nanmean(num_list)
+    mean = round(mean, decimal)
+    return mean
+
+
 def if_same_len(num_list):
     return len(set(num_list)) == 1
 
