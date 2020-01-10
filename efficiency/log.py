@@ -63,7 +63,7 @@ def write_var(var, path='data/debug/var'):
                 ' = ' + repr(var) + '\n')
 
 
-def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=True):
+def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
     import os
     if not path:
         print("[Info] Path does not exist in fwrite():", str(path))
