@@ -62,7 +62,80 @@ def write_var(var, path='data/debug/var'):
         f.write(path.split('/')[-1] +
                 ' = ' + repr(var) + '\n')
 
+        
+def smart_json_dumps(data_structure, make_lists_no_indent=True):
+    import re
+    import json
 
+    class _NoIndent(object):
+        """ Value wrapper. """
+
+        def __init__(self, value):
+            self.value = value
+
+        def __repr__(self):
+            return repr(self.value)
+
+    class _NoIndentEncoder(json.JSONEncoder):
+        FORMAT_SPEC = '@@{}@@'
+        regex = re.compile(FORMAT_SPEC.format(r'(\d+)'))
+
+        def __init__(self, **kwargs):
+            # Save copy of any keyword argument values needed for use here.
+            self.__sort_keys = kwargs.get('sort_keys', None)
+            super().__init__(**kwargs)
+
+        def default(self, obj):
+            return (
+                self.FORMAT_SPEC.format(id(obj)) if isinstance(obj, _NoIndent)
+                else super().default(obj))
+
+        def encode(self, obj):
+            from _ctypes import PyObj_FromPtr
+
+            format_spec = self.FORMAT_SPEC  # Local var to expedite access.
+            json_repr = super().encode(obj)  # Default JSON.
+
+            # Replace any marked-up object ids in the JSON repr with the
+            # value returned from the json.dumps() of the corresponding
+            # wrapped Python object.
+            for match in self.regex.finditer(json_repr):
+                # see https://stackoverflow.com/a/15012814/355230
+                id = int(match.group(1))
+                no_indent = PyObj_FromPtr(id)
+                json_obj_repr = json.dumps(no_indent.value,
+                                           sort_keys=self.__sort_keys)
+
+                # Replace the matched id string with json formatted representation
+                # of the corresponding Python object.
+                json_repr = json_repr.replace(
+                    '"{}"'.format(format_spec.format(id)), json_obj_repr)
+
+            return json_repr
+
+    def _make_all_lists_no_indent(data):
+        if isinstance(data, dict):
+            return {k: _make_all_lists_no_indent(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return _NoIndent(data)
+        else:
+            return data
+
+    def _key_triple2str(data):
+        if isinstance(data, dict):
+            return {str(k) if isinstance(k, tuple) else k
+                    : v for k, v in data.items()}
+        else:
+            return data
+
+    new_data = _key_triple2str(data_structure)
+    if make_lists_no_indent:
+        new_data = _make_all_lists_no_indent(new_data)
+
+    text = json.dumps(new_data, cls=_NoIndentEncoder, sort_keys=True, indent=2)
+    return text
+        
+        
 def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
     import os
     if not path:
