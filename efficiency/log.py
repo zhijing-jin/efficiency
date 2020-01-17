@@ -63,7 +63,7 @@ def write_var(var, path='data/debug/var'):
                 ' = ' + repr(var) + '\n')
 
         
-def smart_json_dumps(data_structure, make_lists_no_indent=True):
+def smart_json_dumps(data_structure, make_lists_no_indent=True, file_path=''):
     import re
     import json
 
@@ -133,6 +133,7 @@ def smart_json_dumps(data_structure, make_lists_no_indent=True):
         new_data = _make_all_lists_no_indent(new_data)
 
     text = json.dumps(new_data, cls=_NoIndentEncoder, sort_keys=True, indent=2)
+    if file_path: fwrite(text, file_path)
     return text
         
         
