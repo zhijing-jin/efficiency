@@ -63,7 +63,7 @@ def write_var(var, path='data/debug/var'):
                 ' = ' + repr(var) + '\n')
 
         
-def smart_json_dumps(data_structure, make_lists_no_indent=True, file_path=''):
+def smart_json_dumps(data_structure, file_path='', make_lists_no_indent=True):
     import re
     import json
 
