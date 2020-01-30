@@ -116,7 +116,7 @@ def smart_json_dumps(data_structure, file_path='', make_lists_no_indent=True):
     def _make_all_lists_no_indent(data):
         if isinstance(data, dict):
             return {k: _make_all_lists_no_indent(v) for k, v in data.items()}
-        elif isinstance(data, list):
+        elif isinstance(data, list) or isinstance(data, tuple):
             return _NoIndent(data)
         else:
             return data
