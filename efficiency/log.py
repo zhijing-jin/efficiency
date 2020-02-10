@@ -133,7 +133,8 @@ def smart_json_dumps(data_structure, file_path='', make_lists_no_indent=True):
         new_data = _make_all_lists_no_indent(new_data)
 
     text = json.dumps(new_data, cls=_NoIndentEncoder, sort_keys=True, indent=2)
-    if file_path: fwrite(text, file_path)
+    if file_path: 
+      (text, file_path)
     return text
         
         
@@ -143,11 +144,21 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
         print("[Info] Path does not exist in fwrite():", str(path))
         return
     if no_overwrite and os.path.isfile(path):
-        print("[Error] pls choose whether to continue, as file already exists:", path)
+        print("[Error] pls choose whether to continue, as file already exists:",
+              path)
         import pdb
         pdb.set_trace()
         return
-    if verbose: print('[Info] Writing {} lines into {}'.format(new_doc.count('\n') + 1, path))
+    if verbose:
+        import ast
+        data = ast.literal_eval(new_doc)
+        if isinstance(data, dict) or isinstance(data, list):
+            length = len(data)
+            print('[Info] Writing {} samples into {}'.format(length, path))
+        else:
+            length = new_doc.count('\n') + 1
+            print('[Info] Writing {} lines into {}'.format(length, path))
+
     with open(path, mode) as f:
         f.write(new_doc)
 
