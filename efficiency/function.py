@@ -39,6 +39,9 @@ def flatten_list(nested_list):
     from itertools import chain
     return list(chain.from_iterable(nested_list))
 
+def flatten_dict(dict_list):
+    from collections import ChainMap
+    return dict(ChainMap(*dict_list))
 
 def set_seed(seed=0, verbose=False):
     import random
