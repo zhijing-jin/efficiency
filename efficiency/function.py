@@ -35,6 +35,23 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
     return output_list
 
 
+def mproc_with_shared_list(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
+    from multiprocessing import Manager
+    from multiprocessing import Pool
+
+    with Manager() as mgr:
+        output = mgr.list([])
+
+        # build list of parameters to send to starmap
+        params = [[output, param] for param in input_list]
+
+        with Pool(processes=min(len(input_list), avail_cpu)) as p:
+            p.starmap(func, params)
+        print(output)
+        another_list = output[:]
+    return another_list
+
+
 def flatten_list(nested_list):
     from itertools import chain
     return list(chain.from_iterable(nested_list))
