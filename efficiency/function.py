@@ -60,6 +60,16 @@ def flatten_dict(dict_list):
     from collections import ChainMap
     return dict(ChainMap(*dict_list))
 
+def lstrip_word(word, pref):
+    if word.startswith(pref):
+        return word[len(pref):]
+    return word
+
+def rstrip_word(word, suf):
+    if word.endswith(suf):
+        return word[:-len(suf)]
+    return word
+
 def set_seed(seed=0, verbose=False):
     import random
     import os
