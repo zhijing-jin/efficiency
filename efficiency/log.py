@@ -150,12 +150,13 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
         pdb.set_trace()
         return
     if verbose:
-        import ast
-        data = ast.literal_eval(new_doc)
-        if isinstance(data, dict) or isinstance(data, list):
-            length = len(data)
-            print('[Info] Writing {} samples into {}'.format(length, path))
-        else:
+        try:
+            import ast
+            data = ast.literal_eval(new_doc)
+            if isinstance(data, dict) or isinstance(data, list):
+                length = len(data)
+                print('[Info] Writing {} samples into {}'.format(length, path))
+        except:
             length = new_doc.count('\n') + 1
             print('[Info] Writing {} lines into {}'.format(length, path))
 
