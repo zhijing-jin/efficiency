@@ -47,14 +47,36 @@ def show_var(expression,
     return output
 
 
-def torchsave(dic, path):
+def torchload(path, verbose=True, timetaking=True):
     import torch
-    if os.path.isfile(path):
+    if verbose and timetaking:
+        show_time('[Info] Loading from {}'.format(path))
+    data = torch.load(path)
+    if verbose:
+        printout = '[info] Loaded {} object from {}'.format(len(data), path)
+        if timetaking:
+            show_time(printout)
+        else:
+            print(printout)
+    return data
+
+
+def torchsave(dic, path, verbose=True, timetaking=True, check_exist=False):
+    import os
+    import torch
+    if check_exist and os.path.isfile(path):
         print('[Warn] tempering', path)
         import pdb
         pdb.set_trace()
-    print('[info] saving object to', path)
+    printout = '[info] Saving {} object to {}'.format(len(dic), path)
+    if verbose:
+        if timetaking:
+            show_time(printout)
+        else:
+            print(printout)
     torch.save(dic, path)
+    if timetaking:
+        show_time(printout)
 
 
 def write_var(var, path='data/debug/var'):
@@ -62,7 +84,7 @@ def write_var(var, path='data/debug/var'):
         f.write(path.split('/')[-1] +
                 ' = ' + repr(var) + '\n')
 
-        
+
 def smart_json_dumps(data_structure, file_path='', make_lists_no_indent=True):
     import re
     import json
@@ -133,11 +155,11 @@ def smart_json_dumps(data_structure, file_path='', make_lists_no_indent=True):
         new_data = _make_all_lists_no_indent(new_data)
 
     text = json.dumps(new_data, cls=_NoIndentEncoder, sort_keys=True, indent=2)
-    if file_path: 
-      (text, file_path)
+    if file_path:
+        (text, file_path)
     return text
-        
-        
+
+
 def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
     import os
     if not path:
@@ -176,13 +198,13 @@ def show_time(what_happens='', cat_server=False, printout=True):
     import datetime
 
     disp = '⏰ Time: ' + \
-        datetime.datetime.now().strftime('%m%d%H%M-%S')
+           datetime.datetime.now().strftime('%m%d%H%M-%S')
     disp = disp + '\t' + what_happens if what_happens else disp
     if printout:
         try:
-          print(disp)
+            print(disp)
         except:
-          pass
+            pass
     curr_time = datetime.datetime.now().strftime('%m%d%H%M')
 
     if cat_server:
@@ -213,7 +235,7 @@ def get_git_version():
     repo = git.Repo(search_parent_directories=True)
     sha = repo.head.object.hexsha
     return sha
-  
+
 
 def del_quote(string):
     cleaned = string.replace("'", "")
@@ -247,8 +269,9 @@ def debug(what_to_debug=''):
     # you can use "!a += 1" for changes of variables
     # you can use "import code; code.interact(local=locals)" to iPython with
     # all variables
-if __name__ == "__main__":
 
+
+if __name__ == "__main__":
     a = "something"
     b = 1
     show_var(["a", "b"], joiner=', ')

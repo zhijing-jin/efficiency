@@ -3,8 +3,6 @@ import os
 
 
 def shell(cmd, working_directory='.', stdout=False, stderr=False):
-    import sys
-    import os
     import subprocess
     from subprocess import PIPE, Popen
 
@@ -12,14 +10,14 @@ def shell(cmd, working_directory='.', stdout=False, stderr=False):
                  stderr=subprocess.STDOUT, cwd=working_directory)
     subp_stdout, subp_stderr = subp.communicate()
 
-    if subp_stdout: subp_stdout = subp_stdout.decode("utf-8") 
-    if subp_stderr: subp_stderr = subp_stderr.decode("utf-8") 
-        
+    if subp_stdout: subp_stdout = subp_stdout.decode("utf-8")
+    if subp_stderr: subp_stderr = subp_stderr.decode("utf-8")
+
     if stdout and subp_stdout:
         print("[stdout]", subp_stdout, "[end]")
     if stderr and subp_stderr:
         print("[stderr]", subp_stderr, "[end]")
-    
+
     return subp_stdout, subp_stderr
 
 
@@ -35,7 +33,8 @@ def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
     return output_list
 
 
-def mproc_with_shared_list(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
+def mproc_with_shared_list(func, input_list,
+                           avail_cpu=multiprocessing.cpu_count() - 4):
     from multiprocessing import Manager
     from multiprocessing import Pool
 
@@ -52,29 +51,43 @@ def mproc_with_shared_list(func, input_list, avail_cpu=multiprocessing.cpu_count
     return another_list
 
 
+def random_sample(data, size=1000):
+    import random
+    if isinstance(data, dict):
+        data = data.items()
+    random.shuffle(data)
+    sample = data[:size]
+    return sample
+
+
 def flatten_list(nested_list):
     from itertools import chain
     return list(chain.from_iterable(nested_list))
 
+
 def flatten_dict(dict_list):
     from collections import ChainMap
     return dict(ChainMap(*dict_list))
+
 
 def lstrip_word(word, pref):
     if word.startswith(pref):
         return word[len(pref):]
     return word
 
+
 def rstrip_word(word, suf):
     if word.endswith(suf):
         return word[:-len(suf)]
     return word
+
 
 def set_seed(seed=0, verbose=False):
     import random
     import os
 
     if seed is None:
+        from efficiency.log import show_time
         seed = int(show_time())
     if verbose: print("[Info] seed set to: {}".format(seed))
 
@@ -166,8 +179,10 @@ def load_yaml(yaml_filepath, dir_=None, op=lambda x: x):
 
     return cfg
 
+
 if __name__ == "__main__":
     import pdb
+
     pdb.set_trace()
     set_seed(0)
     print(if_same_len([3, 23, 3]))
