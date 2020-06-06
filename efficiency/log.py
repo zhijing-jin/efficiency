@@ -68,14 +68,15 @@ def torchsave(dic, path, verbose=True, timetaking=True, check_exist=False):
         print('[Warn] tempering', path)
         import pdb
         pdb.set_trace()
-    printout = '[info] Saving {} object to {}'.format(len(dic), path)
     if verbose:
+        printout = '[info] Saving {} object to {}'.format(len(dic), path)
         if timetaking:
             show_time(printout)
         else:
             print(printout)
     torch.save(dic, path)
     if timetaking:
+        printout = '[info] Saved {} object to {}'.format(len(dic), path)
         show_time(printout)
 
 
