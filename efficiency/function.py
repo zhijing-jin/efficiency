@@ -51,12 +51,15 @@ def mproc_with_shared_list(func, input_list,
     return another_list
 
 
-def random_sample(data, size=1000):
+def random_sample(data, size=1000, return_list=True):
     import random
-    if isinstance(data, dict):
-        data = data.items()
+    if_dict = isinstance(data, dict)
+    if if_dict:
+        data = list(data.items())
     random.shuffle(data)
     sample = data[:size]
+    if (not return_list) and if_dict:
+        sample = dict(sample)
     return sample
 
 
