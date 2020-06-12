@@ -111,6 +111,36 @@ def set_seed(seed=0, verbose=False):
     except ImportError:
         pass
 
+def dict_diff(dict0, dict1, note=''):
+    if isinstance(dict0, dict) and isinstance(dict1, dict):
+        for [key0, val0], [key1, val1] in zip(sorted(dict0.items()),
+                                              sorted(dict1.items())):
+            if key0 != key1:
+                yield (key0, key1, note + ', key_is_diff')
+            else:
+                if isinstance(val0, dict) and isinstance(val1, dict):
+                    for i in dict_diff(val0, val1, note + ', ' + key0):
+                        for b in i:
+                            yield b
+                elif (isinstance(val0, list) or isinstance(val0, tuple)) and \
+                        (isinstance(val1, list) or isinstance(val1, tuple)):
+                    for i in dict_diff(val0, val1, note + ', ' + key0):
+                        for b in i:
+                            yield b
+                else:
+                    if val0 != val1:
+                        yield (
+                        val0, val1, note + ', {}, val_is_diff'.format(key0))
+
+    elif (isinstance(dict0, list) or isinstance(dict0, tuple)) and \
+            (isinstance(dict1, list) or isinstance(dict1, tuple)):
+        for ls_ix, (item0, item1) in enumerate(zip(dict0, dict1)):
+            for i in dict_diff(item0, item1, note + ', {}'.format(ls_ix)):
+                for b in i:
+                    yield b
+    else:
+        if dict0 != dict1:
+            yield (dict0, dict1, note)
 
 def reorder(_x, order):
     x = list(range(len(_x)))
