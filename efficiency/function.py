@@ -72,6 +72,8 @@ def flatten_dict(dict_list):
     from collections import ChainMap
     return dict(ChainMap(*dict_list))
 
+def nested_list2tuple(t):
+    return tuple(map(nested_list2tuple, t)) if isinstance(t, (tuple, list)) else t
 
 def lstrip_word(word, pref):
     if word.startswith(pref):
