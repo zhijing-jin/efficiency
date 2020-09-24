@@ -187,11 +187,13 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
         f.write(new_doc)
 
 
-def fread(path, if_strip=False):
-    with open(path, 'r') as f:
+def fread(path, if_strip=False, delete_empty=False):
+    with open(path, errors='ignore') as f:
         data = f.readlines()
     if if_strip:
         data = [line.strip() for line in data]
+    if delete_empty:
+        data = [line for line in data if line]
     return data
 
 
