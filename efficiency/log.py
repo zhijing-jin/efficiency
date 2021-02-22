@@ -197,6 +197,36 @@ def fread(path, if_strip=False, delete_empty=False):
     return data
 
 
+def read_csv(file, list_or_dict='dict'):
+    import csv
+    with open(file) as f:  # python 3: 'r',newline=""
+        dialect = csv.Sniffer().sniff(f.read(32), delimiters=";,")
+        f.seek(0)
+        if list_or_dict== 'dict':
+            reader = csv.DictReader(f, delimiter=dialect.delimiter)
+        else:
+            reader = csv.reader(f, dialect)
+        content = list(reader)
+    return content 
+  
+  
+def write_rows_to_csv(rows, file):
+    import csv
+    with open(file, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+        
+def write_dict_to_csv(data, file):
+    import csv
+
+    fieldnames = data[0].keys()
+    with open(file, mode='w') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(data)
+
+
 def show_time(what_happens='', cat_server=False, printout=True):
     import datetime
 
