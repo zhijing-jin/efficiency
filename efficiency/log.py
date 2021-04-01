@@ -210,22 +210,28 @@ def read_csv(file, list_or_dict='dict'):
     return content 
   
   
-def write_rows_to_csv(rows, file):
+def write_rows_to_csv(rows, file, verbose=False):
     import csv
     with open(file, 'w') as f:
         writer = csv.writer(f)
         writer.writerows(rows)
+    if verbose:
+        print('[Info] Written {} lines into {}'.format(len(rows), file))
 
         
-def write_dict_to_csv(data, file):
+def write_dict_to_csv(data, file, verbose=False):
     import csv
+    
+    if not len(data): return
 
     fieldnames = data[0].keys()
     with open(file, mode='w') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
-
+    if verbose:
+        print('[Info] Written {} lines into {}'.format(len(rows), file))
+        
 
 def show_time(what_happens='', cat_server=False, printout=True):
     import datetime
