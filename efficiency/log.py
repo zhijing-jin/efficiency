@@ -211,15 +211,19 @@ def read_csv(file, list_or_dict='dict'):
   
   
 def write_rows_to_csv(rows, file, verbose=False):
+    if verbose:
+        print('[Info] Writing {} lines into {}'.format(len(data), file))
+        
     import csv
     with open(file, 'w') as f:
         writer = csv.writer(f)
         writer.writerows(rows)
-    if verbose:
-        print('[Info] Written {} lines into {}'.format(len(rows), file))
 
         
 def write_dict_to_csv(data, file, verbose=False):
+    if verbose:
+        print('[Info] Writing {} lines into {}'.format(len(data), file))
+        
     import csv
     
     if not len(data): return
@@ -229,8 +233,6 @@ def write_dict_to_csv(data, file, verbose=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
-    if verbose:
-        print('[Info] Written {} lines into {}'.format(len(rows), file))
         
 
 def show_time(what_happens='', cat_server=False, printout=True):
