@@ -200,20 +200,20 @@ def fread(path, if_strip=False, delete_empty=False):
 def read_csv(file, list_or_dict='dict'):
     import csv
     with open(file) as f:  # python 3: 'r',newline=""
-        dialect = csv.Sniffer().sniff(f.read(32), delimiters=";,")
+        dialect = csv.Sniffer().sniff(f.readline(), delimiters=";,\t")
         f.seek(0)
-        if list_or_dict== 'dict':
+        if list_or_dict == 'dict':
             reader = csv.DictReader(f, delimiter=dialect.delimiter)
         else:
             reader = csv.reader(f, dialect)
         content = list(reader)
-    return content 
+    return content
   
   
 def write_rows_to_csv(rows, file, verbose=False):
     if verbose:
-        print('[Info] Writing {} lines into {}'.format(len(data), file))
-        
+        print('[Info] Writing {} lines into {}'.format(len(rows), file))
+
     import csv
     with open(file, 'w') as f:
         writer = csv.writer(f)
