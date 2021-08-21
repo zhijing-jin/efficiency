@@ -47,6 +47,20 @@ def show_var(expression,
     return output
 
 
+def get_total_num_lines_in_large_files(file_list, verbose=True):
+    from efficiency.function import shell
+    num_lines = []
+    for f in sorted(file_list):
+        cmd = "wc -l {} | cut -d ' ' -f 1".format(f)
+        stdout, stderr = shell(cmd)
+        num_line = int(stdout)
+        num_lines.append(num_line)
+        if verbose:
+            from efficiency.log import show_var
+            show_var(['cmd', 'num_line'], joiner='\t')
+    return sum(num_lines)
+
+  
 def torchload(path, verbose=True, timetaking=True):
     import torch
     if verbose and timetaking:
