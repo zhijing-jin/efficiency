@@ -56,6 +56,8 @@ def random_sample(data, size=1000, return_list=True):
     if_dict = isinstance(data, dict)
     if if_dict:
         data = list(data.items())
+    if isinstance(data, set):
+        data = list(data)
     random.shuffle(data)
     sample = data[:size]
     if (not return_list) and if_dict:
