@@ -153,13 +153,20 @@ def reorder(_x, order):
     return x
 
 
-def avg(num_list, decimal=2):
+def avg(num_list, decimal=2, return_std=False):
     if not len(num_list):
+        if return_std:
+            return 0, 0
         return 0
 
     import numpy as np
     mean = np.nanmean(num_list)
     mean = round(mean, decimal)
+
+    if return_std:
+        std = np.std(num_list)
+        std = round(std, decimal)
+        return mean, std
     return mean
 
 
