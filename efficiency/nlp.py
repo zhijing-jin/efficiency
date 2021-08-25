@@ -6,12 +6,15 @@ class NLP:
     def __init__(self):
         import spacy
 
-        self.nlp = spacy.load('en_core_web_sm', disable=['ner', 'parser', 'tagger'])
-        self.nlp.add_pipe(self.nlp.create_pipe('sentencizer'))
+        self.nlp = spacy.load('en_core_web_sm', disable=['ner', 'parser', 'tagger', "lemmatizer"])
+        try:
+            self.nlp.add_pipe(self.nlp.create_pipe('sentencizer'))
+        except:
+            self.nlp.add_pipe('sentencizer')
 
     def sent_tokenize(self, text):
         doc = self.nlp(text)
-        sentences = [sent.string.strip() for sent in doc.sents]
+        sentences = [str(sent).strip() for sent in doc.sents]
         return sentences
 
     def word_tokenize(self, text, lower=False):  # create a tokenizer function
