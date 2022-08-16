@@ -201,28 +201,39 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
         f.write(new_doc)
 
 
-def fread(path, if_strip=False, delete_empty=False):
-    with open(path, errors='ignore') as f:
-        data = f.readlines()
-    if if_strip:
-        data = [line.strip() for line in data]
+def fread(path, if_strip=False, delete_empty=False, list_or_dict='dict', encoding='utf-8'):
+    if path.endswith('.jsonl'):
+        import json
+        with open(path) as f:
+            data = [json.loads(line) for line in f]
+
+    elif path.endswith('.json'):
+        import json
+        with open(path) as f:
+            data = json.load(f)
+
+    elif path.endswith('.csv'):
+        # encoding="utf-8-sig" to ignore the \ufeff character
+        import csv
+        with open(path, encoding=encoding) as f:  # python 3: 'r',newline=""
+            dialect = csv.Sniffer().sniff(f.read(32), delimiters=";,")
+            f.seek(0)
+            if list_or_dict == 'dict':
+                reader = csv.DictReader(f, delimiter=dialect.delimiter)
+            else:
+                reader = csv.reader(f, dialect)
+            data = list(reader)
+
+    else:
+        with open(path, errors='ignore') as f:
+            data = f.readlines()
+        if if_strip:
+            data = [line.strip() for line in data]
+
     if delete_empty:
         data = [line for line in data if line]
     return data
 
-
-def read_csv(file, list_or_dict='dict', encoding='utf-8'):
-    # encoding="utf-8-sig" to ignore the \ufeff character
-    import csv
-    with open(file, encoding=encoding) as f:  # python 3: 'r',newline=""
-        dialect = csv.Sniffer().sniff(f.read(32), delimiters=";,")
-        f.seek(0)
-        if list_or_dict== 'dict':
-            reader = csv.DictReader(f, delimiter=dialect.delimiter)
-        else:
-            reader = csv.reader(f, dialect)
-        content = list(reader)
-    return content 
   
   
 def write_rows_to_csv(rows, file, verbose=False):
