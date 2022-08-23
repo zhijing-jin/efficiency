@@ -47,20 +47,23 @@ def show_var(expression,
     return output
 
 
-def get_total_num_lines_in_large_files(file_list, verbose=True):
+def get_total_num_lines_in_large_files(file_list, verbose=True, return_each_file2num_lines=False):
     from efficiency.function import shell
-    num_lines = []
+    file2num_lines = {}
     for f in sorted(file_list):
         cmd = "wc -l {} | cut -d ' ' -f 1".format(f)
         stdout, stderr = shell(cmd)
-        num_line = int(stdout)
-        num_lines.append(num_line)
+        num_lines = int(stdout)
+        file2num_lines[f] = num_lines
         if verbose:
             from efficiency.log import show_var
-            show_var(['cmd', 'num_line'], joiner='\t')
-    return sum(num_lines)
+            show_var(['cmd', 'num_lines'], joiner='\t')
 
-  
+    if return_each_file2num_lines:
+        return sum(file2num_lines.values()), file2num_lines
+    return sum(file2num_lines.values())
+
+
 def torchload(path, verbose=True, timetaking=True):
     import torch
     if verbose and timetaking:
@@ -201,11 +204,27 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
         f.write(new_doc)
 
 
-def fread(path, if_strip=False, delete_empty=False, list_or_dict='dict', encoding='utf-8'):
+def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', encoding='utf-8', return_df=False,
+          verbose=True):
+    from efficiency.log import show_time
+
+    if verbose:
+        show_time('[Info] Starting to read file: ' + path)
     if path.endswith('.jsonl'):
+        if verbose: print('[Info] Reading the file in jsonl format')
         import json
         with open(path) as f:
-            data = [json.loads(line) for line in f]
+            data = []
+            for line_ix, line in enumerate(f):
+                try:
+                    data_line = json.loads(line)
+                except:
+                    import pdb;
+                    pdb.set_trace()
+                    data_line = None
+                data.append(data_line)
+
+            # [json.loads(line) for line in f]
 
     elif path.endswith('.json'):
         import json
@@ -213,17 +232,23 @@ def fread(path, if_strip=False, delete_empty=False, list_or_dict='dict', encodin
             data = json.load(f)
 
     elif path.endswith('.csv'):
-        # encoding="utf-8-sig" to ignore the \ufeff character
-        import csv
-        with open(path, encoding=encoding) as f:  # python 3: 'r',newline=""
-            dialect = csv.Sniffer().sniff(f.read(32), delimiters=";,")
-            f.seek(0)
-            if list_or_dict == 'dict':
-                reader = csv.DictReader(f, delimiter=dialect.delimiter)
-            else:
-                reader = csv.reader(f, dialect)
-            data = list(reader)
+        import pandas as pd
+        data = pd.read_csv(path).to_dict(orient="records")
 
+        if False:
+            # encoding="utf-8-sig" to ignore the \ufeff character
+            import csv
+            with open(path, encoding=encoding) as f:  # python 3: 'r',newline=""
+                dialect = csv.Sniffer().sniff(f.read(32), delimiters=";,")
+                f.seek(0)
+                if csv2list_or_dict == 'dict':
+                    reader = csv.DictReader(f, delimiter=dialect.delimiter)
+                else:
+                    reader = csv.reader(f, dialect)
+                data = list(reader)
+    elif path.endswith('.npy'):
+        import numpy as np
+        data = np.load(path)
     else:
         with open(path, errors='ignore') as f:
             data = f.readlines()
@@ -232,10 +257,12 @@ def fread(path, if_strip=False, delete_empty=False, list_or_dict='dict', encodin
 
     if delete_empty:
         data = [line for line in data if line]
+    if return_df:
+        import pandas as pd
+        data = pd.DataFrame(data)
     return data
 
-  
-  
+
 def write_rows_to_csv(rows, file, verbose=False):
     if verbose:
         print('[Info] Writing {} lines into {}'.format(len(rows), file))
@@ -245,13 +272,13 @@ def write_rows_to_csv(rows, file, verbose=False):
         writer = csv.writer(f)
         writer.writerows(rows)
 
-        
+
 def write_dict_to_csv(data, file, verbose=False):
     if verbose:
         print('[Info] Writing {} lines into {}'.format(len(data), file))
-        
+
     import csv
-    
+
     if not len(data): return
 
     fieldnames = data[0].keys()
@@ -259,7 +286,7 @@ def write_dict_to_csv(data, file, verbose=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
-        
+
 
 def show_time(what_happens='', cat_server=False, printout=True):
     import datetime
