@@ -2,9 +2,12 @@ import multiprocessing
 import os
 
 
-def shell(cmd, working_directory='.', stdout=False, stderr=False):
+def shell(cmd, working_directory='.', stdout=False, stderr=False, verbose=True):
     import subprocess
     from subprocess import PIPE, Popen
+
+    if verbose:
+        print("[Info] Starting to run this command now:", cmd)
 
     subp = Popen(cmd, shell=True, stdout=PIPE,
                  stderr=subprocess.STDOUT, cwd=working_directory)
@@ -19,6 +22,7 @@ def shell(cmd, working_directory='.', stdout=False, stderr=False):
         print("[stderr]", subp_stderr, "[end]")
 
     return subp_stdout, subp_stderr
+
 
 
 def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
