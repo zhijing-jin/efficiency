@@ -52,7 +52,7 @@ def get_total_num_lines_in_large_files(file_list, verbose=True, return_each_file
     file2num_lines = {}
     for f in sorted(file_list):
         cmd = "wc -l {} | cut -d ' ' -f 1".format(f)
-        stdout, stderr = shell(cmd)
+        stdout, stderr = shell(cmd, verbose=False)
         num_lines = int(stdout)
         file2num_lines[f] = num_lines
         if verbose:
@@ -218,11 +218,10 @@ def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', enc
             for line_ix, line in enumerate(f):
                 try:
                     data_line = json.loads(line)
+                    data.append(data_line)
                 except:
                     import pdb;
                     pdb.set_trace()
-                    data_line = None
-                data.append(data_line)
 
             # [json.loads(line) for line in f]
 
