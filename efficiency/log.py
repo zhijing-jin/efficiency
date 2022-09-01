@@ -178,7 +178,7 @@ def smart_json_dumps(data_structure, file_path='', make_lists_no_indent=True):
     return text
 
 
-def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
+def fwrite(new_doc, path, mode='w', no_overwrite=False, mkdir=True, verbose=False):
     import os
     if not path:
         print("[Info] Path does not exist in fwrite():", str(path))
@@ -189,6 +189,23 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, verbose=False):
         import pdb
         pdb.set_trace()
         return
+
+    from pathlib import Path
+    path_in_os = Path(path)
+    folder = path_in_os.parent
+
+    if mkdir:
+        if verbose:
+            print('[Info] Establishing new folder: ' + str(folder))
+        folder.mkdir(parents=True, exist_ok=True)
+    else:
+        import os
+        if not os.path.exists():
+            print("[Error] The parent folder does not exist: " + str(folder))
+            import pdb
+            pdb.set_trace()
+            return
+
     if verbose:
         try:
             import ast
@@ -210,6 +227,10 @@ def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', enc
 
     if verbose:
         show_time('[Info] Starting to read file: ' + path)
+    if not os.path.isfile(path):
+        print('[Warn] This file does not exist: ' + path)
+        return []
+
     if path.endswith('.jsonl'):
         if verbose: print('[Info] Reading the file in jsonl format')
         import json
