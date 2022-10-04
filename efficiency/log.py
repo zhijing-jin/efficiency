@@ -195,9 +195,10 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, mkdir=True, verbose=Fals
     folder = path_in_os.parent
 
     if mkdir:
-        if verbose:
-            print('[Info] Establishing new folder: ' + str(folder))
-        folder.mkdir(parents=True, exist_ok=True)
+        if not os.path.isdir(folder):
+            if verbose:
+                print('[Info] Establishing new folder: ' + str(folder))
+            folder.mkdir(parents=True, exist_ok=True)
     else:
         import os
         if not os.path.exists():
