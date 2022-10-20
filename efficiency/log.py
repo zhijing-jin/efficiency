@@ -281,6 +281,9 @@ def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', enc
     if return_df:
         import pandas as pd
         data = pd.DataFrame(data)
+
+    if verbose: print(f'[Info] Finished reading {len(data)} samples from the file {path}')
+
     return data
 
 
@@ -307,6 +310,10 @@ def write_dict_to_csv(data, file, verbose=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
+    '''
+    df = pd.DataFrame(data_to_save)
+    df.to_csv(output_file, index=False)
+    '''
 
 
 def show_time(what_happens='', cat_server=False, printout=True):
