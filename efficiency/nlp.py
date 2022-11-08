@@ -3,10 +3,10 @@ from efficiency.log import show_var
 
 
 class NLP:
-    def __init__(self):
+    def __init__(self, disable=['ner', 'parser', 'tagger', "lemmatizer"]):
         import spacy
 
-        self.nlp = spacy.load('en_core_web_sm', disable=['ner', 'parser', 'tagger', "lemmatizer"])
+        self.nlp = spacy.load('en_core_web_sm', disable=disable)
         try:
             self.nlp.add_pipe(self.nlp.create_pipe('sentencizer'))
         except:
@@ -23,7 +23,7 @@ class NLP:
         if lower: text = text.lower()
         toks = [tok.text for tok in self.nlp.tokenizer(text)]
         return ' '.join(toks)
-    
+
     @staticmethod
     def sent_bleu(ref_list, hyp):
         from nltk.translate import bleu
@@ -32,6 +32,7 @@ class NLP:
         refs = [ref.split() for ref in ref_list]
         hyp = hyp.split()
         return bleu(refs, hyp, smoothing_function=smoothie)
+
 
 def main():
     raw_text = 'Hello, world. Here are two people with M.A. degrees from UT Austin. This is Mr. Mike.'
