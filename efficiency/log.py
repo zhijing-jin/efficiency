@@ -223,14 +223,14 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, mkdir=True, verbose=Fals
 
 
 def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', encoding='utf-8', return_df=False,
-          verbose=True):
+          verbose=True, if_empty_return=[]):
     from efficiency.log import show_time
 
     if verbose:
         show_time('[Info] Starting to read file: ' + path)
     if not os.path.isfile(path):
         print('[Warn] This file does not exist: ' + path)
-        return []
+        return if_empty_return
 
     if path.endswith('.jsonl'):
         if verbose: print('[Info] Reading the file in jsonl format')
@@ -282,22 +282,22 @@ def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', enc
         import pandas as pd
         data = pd.DataFrame(data)
 
-    if verbose: print(f'[Info] Finished reading {len(data)} samples from the file {path}')
+    if verbose: show_time(f'[Info] Finished reading {len(data)} samples from the file {path}')
 
     return data
 
 
-def write_rows_to_csv(rows, file, verbose=False):
+def write_rows_to_csv(rows, file, verbose=False, mode='w'):
     if verbose:
         print('[Info] Writing {} lines into {}'.format(len(rows), file))
 
     import csv
-    with open(file, 'w') as f:
+    with open(file, mode) as f:
         writer = csv.writer(f)
         writer.writerows(rows)
 
 
-def write_dict_to_csv(data, file, verbose=False):
+def write_dict_to_csv(data, file, verbose=False, mode='w'):
     if verbose:
         print('[Info] Writing {} lines into {}'.format(len(data), file))
 
@@ -306,9 +306,19 @@ def write_dict_to_csv(data, file, verbose=False):
     if not len(data): return
 
     fieldnames = data[0].keys()
-    with open(file, mode='w') as csv_file:
+    lines = fread(file, verbose=False)
+    existing = len(lines) >= 2
+    if existing:
+        fieldnames_existing = lines[0].keys()
+        if set(fieldnames) - set(fieldnames_existing):
+            print(f'[Warn] The existing csv columns ({fieldnames_existing}) are not compatible with the new csv '
+                  f'columns ({fieldnames}).')
+            import pdb;
+            pdb.set_trace()
+        fieldnames = fieldnames_existing
+    with open(file, mode=mode) as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        writer.writeheader()
+        if not existing: writer.writeheader()
         writer.writerows(data)
     '''
     df = pd.DataFrame(data_to_save)
