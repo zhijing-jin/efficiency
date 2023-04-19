@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='efficiency',
-    version='1.1',
+    version='1.2',
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='A package for efficient programming',
@@ -13,6 +13,5 @@ setup(
     long_description_content_type='text/markdown',
     install_requires=['spacy', 'nltk', 'pandas', 'numpy'],
     url='https://github.com/zhijing-jin/efficiency',
-    author='Z',
-    author_email='zhijing.jin@connect.hku.hk'
+    author='Zhijing Jin'
 )
