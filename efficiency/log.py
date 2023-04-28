@@ -308,17 +308,18 @@ def write_dict_to_csv(data, file, verbose=False, mode='w'):
     fieldnames = data[0].keys()
     lines = fread(file, verbose=False)
     existing = len(lines) >= 2
-    if existing:
-        fieldnames_existing = lines[0].keys()
-        if set(fieldnames) - set(fieldnames_existing):
-            print(f'[Warn] The existing csv columns ({fieldnames_existing}) are not compatible with the new csv '
-                  f'columns ({fieldnames}).')
-            import pdb;
-            pdb.set_trace()
-        fieldnames = fieldnames_existing
+    if mode == 'a':
+        if existing:
+            fieldnames_existing = lines[0].keys()
+            if set(fieldnames) - set(fieldnames_existing):
+                print(f'[Warn] The existing csv columns ({fieldnames_existing}) are not compatible with the new csv '
+                      f'columns ({fieldnames}).')
+                import pdb;
+                pdb.set_trace()
+            fieldnames = fieldnames_existing
     with open(file, mode=mode) as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        if not existing: writer.writeheader()
+        if (mode == 'w') or (not existing): writer.writeheader()
         writer.writerows(data)
     '''
     df = pd.DataFrame(data_to_save)
