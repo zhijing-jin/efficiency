@@ -36,15 +36,29 @@ class NLP:
 
 class Chatbot:
     model_version2engine = {
-        'gpt3': "text-davinci-003",
-        'gpt3.5': "gpt-3.5-turbo",
         'gpt4': "gpt-4",
+        'gpt3.5': "gpt-3.5-turbo",
+        'gpt3': "text-davinci-003",
+
+        'gpt3.042': "text-davinci-002",
+        'gpt3.041': "text-davinci-001",
+        'gpt3.04': "davinci",
+        'gpt3.03': "curie",
+        'gpt3.02': "babbage",
+        'gpt3.01': "ada",
+
     }
     engine2pricing = {
         "gpt-3.5-turbo": 0.002,
         "gpt-4-32k": 0.12,
         "gpt-4": 0.06,
         "text-davinci-003": 0.0200,
+        "text-davinci-002": 0.0200,
+        "text-davinci-001": 0.0200,
+        "davinci": 0.0200,
+        "curie": 0.0020,
+        "babbage": 0.0005,
+        "ada": 0.0004,
     }
 
     def __init__(self, model_version='gpt3.5', max_tokens=100, output_file='.cache_gpt_responses.csv',
@@ -145,6 +159,7 @@ class Chatbot:
     def raw_query(self, question,
                   turn_off_cache=False,
                   continued_questions=False,
+                  sentence_completion_mode=False,
                   max_tokens=None, stop_sign="\nQ: ",
                   model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
                   engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
@@ -183,10 +198,14 @@ class Chatbot:
                 )
                 response_text = response['choices'][0]['message']['content']
             else:
+                if sentence_completion_mode:
+                    prompt = question
+                else:
+                    prompt = self.dialog_history_to_str()
                 response = openai.Completion.create(
                     model=engine,
                     # prompt=[question],
-                    prompt=self.dialog_history_to_str(),
+                    prompt=prompt,
                     max_tokens=max_tokens,
                     temperature=0,
                     stop=stop_sign,
@@ -194,11 +213,11 @@ class Chatbot:
                 response_text = response['choices'][0]['text']
             self.num_tokens.append(response['usage']["total_tokens"])
             response_text = response_text.strip()
+            if verbose: self.print_cost()
 
         output = f"S: {self.dialog_history[0]['content']}\n\nQ: {question}\n\nA: {response_text}\n"
         if verbose:
             print(output)
-            self.print_cost()
 
         self.dialog_history.append({"role": "assistant", "content": response_text}, )
 
