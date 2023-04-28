@@ -48,9 +48,10 @@ class Chatbot:
     }
 
     def __init__(self, model_version='gpt3.5', max_tokens=100, output_file='.cache_gpt_responses.csv',
-                 system_prompt="You are a helpful assistant."):
+                 system_prompt="You are a helpful assistant.",
+                 openai_key_alias='OPENAI_API_KEY', ):
         import os
-        openai_api_key = os.environ['OPENAI_API_KEY']
+        openai_api_key = os.environ[openai_key_alias]
 
         self.model_version = model_version
         self.max_tokens = max_tokens
@@ -114,10 +115,10 @@ class Chatbot:
                           if f'query{q_i}' in i})
         return cache
 
-    def query_with_patience(self, *args, **kwargs):
+    def ask(self, *args, **kwargs):
         import openai
         try:
-            return self.query(*args, **kwargs)
+            return self.raw_query(*args, **kwargs)
         except openai.error.InvalidRequestError:
             import pdb;
             pdb.set_trace()
@@ -139,14 +140,16 @@ class Chatbot:
 
             import time
             time.sleep(sec)
-            return self.query_with_patience(*args, **kwargs)
+            return self.ask(*args, **kwargs)
 
-    def query(self, question, turn_off_cache=False, stop_sign="\nQ: ",
-              continued_questions=False, max_tokens=None, verbose=True, only_response=True,
-              model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
-              engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
-              enable_pdb=False,
-              ):
+    def raw_query(self, question,
+                  turn_off_cache=False,
+                  continued_questions=False,
+                  max_tokens=None, stop_sign="\nQ: ",
+                  model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
+                  engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
+                  enable_pdb=False, verbose=True, only_response=True,
+                  ):
         if model_version is not None:
             engine = self.model_version2engine[model_version]
         elif engine is not None:
@@ -225,7 +228,7 @@ def main():
 
     chat = Chatbot()
     query = 'What is the best way to learn Machine Learning?'
-    response = chat.query_with_patience(query)
+    response = chat.ask(query)
 
 
 if __name__ == '__main__':
