@@ -34,12 +34,61 @@ class NLP:
         return bleu(refs, hyp, smoothing_function=smoothie)
 
 
+class Translator:
+    def __init__(self, cache_file_pattern='.cache_{src}2{tgt}.json', load_translator=True):
+        self.cache_file_pattern = cache_file_pattern
+        from collections import defaultdict
+        self.cache = defaultdict(dict)
+        if load_translator:
+            from googletrans import Translator
+            self.translator = Translator()
+
+    def load_cache(self):
+        from efficiency.log import fread
+        fread(self.cache_file)
+
+    def translate(self, text, src_lang='en', tgt_lang='de', verbose=True, enable_cache=False):
+        if src_lang == tgt_lang:
+            return text
+
+        if enable_cache:
+            this_cache_file = self.cache_file_pattern.format(src=src_lang, tgt=tgt_lang)
+            lang_pair = tuple((src_lang, tgt_lang))
+            if lang_pair not in self.cache:
+                import os
+                if os.path.exists(this_cache_file):
+                    from efficiency.log import fread
+                    self.cache[lang_pair] = fread(this_cache_file)
+
+            if text in self.cache[lang_pair]:
+                translated_text = self.cache[lang_pair][text]
+            else:
+                translated_text = self.translator.translate(text, src=src_lang, dest=tgt_lang).text
+                self.cache[lang_pair][text] = translated_text
+                from efficiency.log import fwrite
+                fwrite(self.cache[lang_pair], this_cache_file)
+        else:
+            translated_text = self.translator.translate(text, src=src_lang, dest=tgt_lang).text
+
+        if translated_text == text:
+            print("[Warn] Translation is failed. You have very likely reached the limit of the `googletrans' library. "
+                  "Try to wait for a while or change your IP address. Alternatively, you can also edit the source "
+                  "code here to change it to Google cloud API by setting up your credentials.")
+            import pdb;
+            pdb.set_trace()
+        if verbose:
+            from efficiency.log import show_var
+            show_var(['text', 'translated_text', ])
+        return translated_text
+
+
 class Chatbot:
     model_version2engine = {
         'gpt4': "gpt-4",
         'gpt3.5': "gpt-3.5-turbo",
         'gpt3': "text-davinci-003",
 
+        'gpt3.043': "text-davinci-003",
         'gpt3.042': "text-davinci-002",
         'gpt3.041': "text-davinci-001",
         'gpt3.04': "davinci",
@@ -88,8 +137,10 @@ class Chatbot:
             # {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
         ]
 
-    def dialog_history_to_str(self):
+    def dialog_history_to_str(self, disable_system_role=False):
         dialog_history_text = []
+        if not disable_system_role:
+            dialog_history_text += [self.system_prompt]
         for turn in self.dialog_history:
             if turn['role'] == 'user':
                 prefix = 'Q'
@@ -119,6 +170,16 @@ class Chatbot:
     def print_cost(self):
         print(f"[Info] Spent ${self._total_cost} for {sum(self.num_tokens)} tokens.")
 
+    def save_cache(self, question, response_text):
+        if not (question in self.cache):
+            self.cache[question] = response_text
+            datum = [{
+                'pred': response_text,
+                'query': question,
+            }]
+            from efficiency.log import write_dict_to_csv
+            write_dict_to_csv(datum, self.output_file, mode='a')
+
     def load_cache(self):
         cache = {}
         from efficiency.log import fread
@@ -143,9 +204,21 @@ class Chatbot:
                 if turn['role'] == 'assistant':
                     turn['content'] = turn['content'][:1000]
 
-        except openai.error.RateLimitError:
+        except openai.error.RateLimitError or openai.error.APIError:
             sec = 100
             print(f'[Info] openai.error.RateLimitError. Wait for {sec} seconds')
+            self.print_cost()
+            '''
+            Default rate limits for gpt-4/gpt-4-0314 are 40k TPM and 200 RPM. Default rate limits for gpt-4-32k/gpt-4-32k-0314 are 80k PRM and 400 RPM. 
+            https://platform.openai.com/docs/guides/rate-limits/overview
+            '''
+
+            import time
+            time.sleep(sec)
+            return self.ask(*args, **kwargs)
+        except:
+            sec = 100
+            print(f'[Info] Unknown error. Wait for {sec} seconds')
             self.print_cost()
             '''
             Default rate limits for gpt-4/gpt-4-0314 are 40k TPM and 200 RPM. Default rate limits for gpt-4-32k/gpt-4-32k-0314 are 80k PRM and 400 RPM. 
@@ -163,7 +236,8 @@ class Chatbot:
                   max_tokens=None, stop_sign="\nQ: ",
                   model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
                   engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
-                  enable_pdb=False, verbose=True, only_response=True,
+                  enable_pdb=False, verbose=True, only_response=True, disable_system_role=False,
+                  save_cache_with_system_role=False,
                   ):
         if model_version is not None:
             engine = self.model_version2engine[model_version]
@@ -182,11 +256,25 @@ class Chatbot:
             self.clear_dialog_history()
 
         self.dialog_history.append({"role": "user", "content": question}, )
+        if not if_newer_engine:
+            if sentence_completion_mode:
+                if disable_system_role:
+                    prompt = question
+                else:
+                    prompt = '\n'.join([self.system_prompt, question])
+            else:
+                prompt = self.dialog_history_to_str(disable_system_role=disable_system_role)
+        else:
+            prompt = question
 
-        if (question in self.cache) & (not turn_off_cache):
-            response_text = self.cache[question]
+        cache_input = prompt if save_cache_with_system_role else question
+        if enable_pdb:
+            import pdb;
+            pdb.set_trace()
+        if (cache_input in self.cache) & (not turn_off_cache):
+            response_text = self.cache[cache_input]
             if not if_newer_engine: response_text = response_text.split(stop_sign, 1)[0]
-            if verbose: print(f'[Info] Using cache for {question}')
+            if verbose: print(f'[Info] Using cache for {cache_input}')
         else:
             openai = self.openai
             if if_newer_engine:
@@ -198,10 +286,6 @@ class Chatbot:
                 )
                 response_text = response['choices'][0]['message']['content']
             else:
-                if sentence_completion_mode:
-                    prompt = question
-                else:
-                    prompt = self.dialog_history_to_str()
                 response = openai.Completion.create(
                     model=engine,
                     # prompt=[question],
@@ -215,8 +299,14 @@ class Chatbot:
             response_text = response_text.strip()
             if verbose: self.print_cost()
 
-        output = f"S: {self.dialog_history[0]['content']}\n\nQ: {question}\n\nA: {response_text}\n"
+        if if_newer_engine:
+            output = f"S: {self.dialog_history[0]['content']}\n\n" \
+                     f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
+        else:
+            output = f"{prompt} {response_text}\n"
+
         if verbose:
+            print()
             print(output)
 
         self.dialog_history.append({"role": "assistant", "content": response_text}, )
@@ -225,17 +315,11 @@ class Chatbot:
             import pdb;
             pdb.set_trace()
 
-        if not (question in self.cache):
-            datum = [{
-                'pred': response_text,
-                'query': question,
-            }]
-            from efficiency.log import write_dict_to_csv
-            write_dict_to_csv(datum, self.output_file, mode='a')
+        self.save_cache(cache_input, response_text)
 
         if only_response:
             return response_text
-        return output
+        return response_text, output
 
 
 def main():

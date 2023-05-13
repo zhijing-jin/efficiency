@@ -223,13 +223,13 @@ def fwrite(new_doc, path, mode='w', no_overwrite=False, mkdir=True, verbose=Fals
 
 
 def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', encoding='utf-8', return_df=False,
-          verbose=True, if_empty_return=[]):
+          verbose=True, if_empty_return=[], calc_time=False):
     from efficiency.log import show_time
 
-    if verbose:
+    if calc_time:
         show_time('[Info] Starting to read file: ' + path)
     if not os.path.isfile(path):
-        print('[Warn] This file does not exist: ' + path)
+        if verbose: print('[Warn] This file does not exist: ' + path)
         return if_empty_return
 
     if path.endswith('.jsonl'):
@@ -254,7 +254,10 @@ def fread(path, if_strip=False, delete_empty=False, csv2list_or_dict='dict', enc
 
     elif path.endswith('.csv'):
         import pandas as pd
-        data = pd.read_csv(path).to_dict(orient="records")
+        try:
+            data = pd.read_csv(path).to_dict(orient="records")
+        except:
+            return if_empty_return
 
         if False:
             # encoding="utf-8-sig" to ignore the \ufeff character
@@ -330,7 +333,7 @@ def write_dict_to_csv(data, file, verbose=False, mode='w'):
 def show_time(what_happens='', cat_server=False, printout=True):
     import datetime
 
-    disp = '⏰ Time: ' + \
+    disp = '🕙 Time: ' + \
            datetime.datetime.now().strftime('%m%d%H%M-%S')
     disp = disp + '\t' + what_happens if what_happens else disp
     if printout:
@@ -370,10 +373,46 @@ def get_git_version():
     return sha
 
 
+def verbalize_list_of_options(choices, connective=['and', 'or'][-1], add_comma_if_len=[2,3][-1],
+                              wrap_choices=['', '"'][-1]):
+
+    choices = [f'{wrap_choices}{i}{wrap_choices}' for i in choices]
+    if len(choices) > 1:
+        choices[-1] = f'{connective} ' + choices[-1]
+    if len(choices) < add_comma_if_len:
+        choices = ' '.join(choices)
+    else:
+        choices = ', '.join(choices)
+    return choices
+
+
 def del_quote(string):
     cleaned = string.replace("'", "")
     cleaned = cleaned.replace("\"", "")
     return cleaned
+
+
+def print_df_value_count(df, columns=None):
+    if columns is None: columns = df.columns
+    for column in columns:
+        print(f"Column {column}:")
+        print(df[column].value_counts(normalize=True) * 100)
+        print()
+
+
+def pivot_df(df, rows='query_type', columns='model_version'):
+    import pdb;pdb.set_trace()
+    pivot_df = df.pivot_table(index=rows, columns=columns, values='score', aggfunc='first')
+
+    pivot_df.reset_index(inplace=True)
+    pivot_df.fillna('---', inplace=True)
+    pivot_df.columns.name = None
+
+    desired_order = sorted(df[differ_by].unique().tolist())
+    pivot_df.set_index(rows, inplace=True)
+    pivot_df = pivot_df.reindex(desired_order)
+    pivot_df.reset_index(inplace=True)
+    return pivot_df
 
 
 def gpu_mem(gpu_id=0):

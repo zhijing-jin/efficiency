@@ -24,7 +24,6 @@ def shell(cmd, working_directory='.', stdout=False, stderr=False, verbose=True):
     return subp_stdout, subp_stderr
 
 
-
 def mproc(func, input_list, avail_cpu=multiprocessing.cpu_count() - 4):
     '''
     This is a multiprocess function where you execute the function with 
@@ -78,8 +77,26 @@ def flatten_dict(dict_list):
     from collections import ChainMap
     return dict(ChainMap(*dict_list))
 
+
 def nested_list2tuple(t):
     return tuple(map(nested_list2tuple, t)) if isinstance(t, (tuple, list)) else t
+
+
+def search_nested_dict(nested_dict, target_key):
+    queue = [(nested_dict, key) for key in nested_dict]
+
+    while queue:
+        current_dict, key = queue.pop(0)
+
+        if key == target_key:
+            return current_dict[key]
+
+        if isinstance(current_dict[key], dict):
+            for sub_key in current_dict[key]:
+                queue.append((current_dict[key], sub_key))
+
+    return None
+
 
 def lstrip_word(word, pref):
     if word.startswith(pref):
@@ -119,6 +136,34 @@ def set_seed(seed=0, verbose=False):
     except ImportError:
         pass
 
+
+def get_set_f1(ground_truth_set, predicted_set, report_percentage=True):
+    true_positives = len(ground_truth_set.intersection(predicted_set))
+    false_positives = len(predicted_set.difference(ground_truth_set))
+    false_negatives = len(ground_truth_set.difference(predicted_set))
+
+    if true_positives == 0:
+        return 0
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+
+    f1 = 2 * (precision * recall) / (precision + recall)
+    if report_percentage:
+        f1 *= 100
+    return f1
+
+def get_set_edit_distance(set1, set2):
+    try:
+        import Levenshtein
+    except:
+        import os
+        os.system('pip install python-Levenshtein')
+        import Levenshtein
+
+    list1 = sorted(list(set1))
+    list2 = sorted(list(set2))
+    return Levenshtein.distance(str(list1), str(list2))
+
 def dict_diff(dict0, dict1, note=''):
     if isinstance(dict0, dict) and isinstance(dict1, dict):
         for [key0, val0], [key1, val1] in zip(sorted(dict0.items()),
@@ -138,7 +183,7 @@ def dict_diff(dict0, dict1, note=''):
                 else:
                     if val0 != val1:
                         yield (
-                        val0, val1, note + ', {}, val_is_diff'.format(key0))
+                            val0, val1, note + ', {}, val_is_diff'.format(key0))
 
     elif (isinstance(dict0, list) or isinstance(dict0, tuple)) and \
             (isinstance(dict1, list) or isinstance(dict1, tuple)):
@@ -149,6 +194,7 @@ def dict_diff(dict0, dict1, note=''):
     else:
         if dict0 != dict1:
             yield (dict0, dict1, note)
+
 
 def reorder(_x, order):
     x = list(range(len(_x)))

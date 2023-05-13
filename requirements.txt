@@ -1,2 +1,0 @@
-beautifulsoup4
-json2table
