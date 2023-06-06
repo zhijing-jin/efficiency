@@ -109,7 +109,6 @@ class Translator:
             show_var(['text', 'translated_text', ])
         return translated_text
 
-
     @staticmethod
     def print_countries(langs):
         langs = sorted(langs)
@@ -127,7 +126,6 @@ class Translator:
         import pdb;
         pdb.set_trace()
         return df
-
 
     @staticmethod
     def get_language_list(list_from=['googletrans', 'pycountry', 'langcodes'][0]):
@@ -217,15 +215,19 @@ class Chatbot:
         self.model_version = model_version
         self.engine = self.model_version2engine.get(model_version, model_version)
         self.max_tokens = max_tokens
-        self.system_prompt = system_prompt
+        self.set_system_prompt(system_prompt)
         self.output_file = f'{output_folder}/.cache_{model_version}.csv' if output_file is None else output_file
-        self.gpt_files = cache_files + [output_file]
+        self.gpt_files = cache_files + [self.output_file]
 
         self.openai = openai
         self.num_tokens = []
         self.cache = self.load_cache()
         # self.list_all_models()
         self.clear_dialog_history()
+
+    def set_system_prompt(self, system_prompt="You are a helpful assistant."):
+        self.system_prompt = system_prompt
+        self.system_is_default = system_prompt == "You are a helpful assistant."
 
     def clear_dialog_history(self):
         self.dialog_history = [
@@ -234,22 +236,44 @@ class Chatbot:
             # {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
         ]
 
-    def dialog_history_to_str(self, disable_system_role=False):
-        dialog_history_text = []
-        if not disable_system_role:
-            dialog_history_text += [self.system_prompt]
-        for turn in self.dialog_history:
-            if turn['role'] == 'user':
-                prefix = 'Q'
-            elif turn['role'] == 'assistant':
-                prefix = 'A'
-            else:
-                continue
-            this_text = f"{prefix}: {turn['content']}"
-            if prefix == 'A':
-                this_text += '\n'
-            dialog_history_text.append(this_text)
-        dialog_history_text = '\n'.join(dialog_history_text) + '\nA:'
+    def dialog_history_to_str(self, pure_completion_mode=False, ):
+        dialog_history = [turn for turn in self.dialog_history
+                          if not ((turn['role'] == 'system') and self.system_is_default)]
+
+        if not self.if_newer_engine:
+            # dialog_history = [turn for turn in dialog_history if not (turn['role'] == 'system')]
+            for turn_i, turn in enumerate(dialog_history):
+                if turn['role'] == 'system':
+                    system_prompt = turn['content']
+                    dialog_history.pop(turn_i)
+                    next_turn = dialog_history[turn_i]
+                    if next_turn['role'] == 'user':
+                        dialog_history[turn_i]['content'] = '\n'.join([system_prompt, next_turn['content']])
+                        break
+            self.dialog_history = dialog_history
+        if pure_completion_mode:
+            dialog_history_text = turn['content']
+        else:
+            dialog_history_text = []
+            for turn in dialog_history:
+                if turn['role'] == 'system':
+                    prefix = 'S'
+                elif turn['role'] == 'user':
+                    prefix = 'Q'
+                elif turn['role'] == 'assistant':
+                    prefix = 'A'
+                else:
+                    continue
+                this_text = f"{prefix}: {turn['content']}"
+                if prefix == 'A':
+                    this_text += '\n'
+                dialog_history_text.append(this_text)
+
+            dialog_history_text = '\n'.join(dialog_history_text)
+
+            if not self.if_newer_engine:
+                if turn['role'] != 'assistant':
+                    dialog_history_text += '\nA:'
         return dialog_history_text
 
     def list_all_models(self):
@@ -323,16 +347,19 @@ class Chatbot:
         # except:
         #     repeat()
 
-    def raw_query(self, question,
+    def raw_query(self, question, system_prompt='You are a helpful assistant.',
                   turn_off_cache=False, valid_ways=['cache', 'api_call'],
                   continued_questions=False,
-                  sentence_completion_mode=False,
                   max_tokens=None, stop_sign="\nQ: ",
                   model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
                   engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
-                  enable_pdb=False, verbose=True, only_response=True, disable_system_role=False,
-                  save_cache_with_system_role=False,
+                  enable_pdb=False, verbose=True, only_response=True,
                   ):
+        self.set_system_prompt(system_prompt)
+        if model_version is not None:
+            if model_version != self.model_version:
+                turn_off_cache = True
+
         enable_api = 'api_call' in valid_ways
         if model_version is not None:
             engine = self.model_version2engine.get(model_version, model_version)
@@ -346,24 +373,18 @@ class Chatbot:
         verbose = True if enable_pdb else verbose
 
         if_newer_engine = engine.startswith('gpt-3.5') or engine.startswith('gpt-4')
+        self.if_newer_engine = if_newer_engine
 
         if not continued_questions:
             self.clear_dialog_history()
 
         self.dialog_history.append({"role": "user", "content": question}, )
-        if not if_newer_engine:
-            if sentence_completion_mode:
-                if disable_system_role:
-                    prompt = question
-                else:
-                    prompt = '\n'.join([self.system_prompt, question])
-            else:
-                prompt = self.dialog_history_to_str(disable_system_role=disable_system_role)
-        else:
-            prompt = question
 
-        cache_input = prompt if save_cache_with_system_role else question
+        prompt = self.dialog_history_to_str()
+        cache_input = prompt
+
         if enable_pdb:
+            print(cache_input)
             import pdb;
             pdb.set_trace()
         if (cache_input in self.cache) & (not turn_off_cache):
@@ -398,23 +419,19 @@ class Chatbot:
         else:
             response_text = ''
 
-        if if_newer_engine:
-            output = f"S: {self.dialog_history[0]['content']}\n\n" \
-                     f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
-        else:
-            output = f"{prompt} {response_text}\n"
+        self.dialog_history.append({"role": "assistant", "content": response_text}, )
 
         if verbose:
             print()
-            print(output)
-
-        self.dialog_history.append({"role": "assistant", "content": response_text}, )
+            print(self.dialog_history_to_str())
 
         if enable_pdb:
             import pdb;
             pdb.set_trace()
 
-        if enable_api: self.save_cache(cache_input, response_text)
+        if enable_api:
+            if not turn_off_cache:
+                self.save_cache(cache_input, response_text)
 
         if only_response:
             return response_text

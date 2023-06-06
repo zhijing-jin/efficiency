@@ -137,7 +137,70 @@ def set_seed(seed=0, verbose=False):
         pass
 
 
+class SetComparison:
+    @staticmethod
+    def get_set_f1(ground_truth_set, predicted_set, report_percentage=True):
+        true_positives = len(ground_truth_set.intersection(predicted_set))
+        false_positives = len(predicted_set.difference(ground_truth_set))
+        false_negatives = len(ground_truth_set.difference(predicted_set))
+
+        if true_positives == 0:
+            return 0
+        precision = true_positives / (true_positives + false_positives)
+        recall = true_positives / (true_positives + false_negatives)
+
+        f1 = 2 * (precision * recall) / (precision + recall)
+        if report_percentage:
+            f1 *= 100
+        return f1
+
+    @staticmethod
+    def get_set_edit_distance(set1, set2):
+        try:
+            import Levenshtein
+        except:
+            import os
+            os.system('pip install python-Levenshtein')
+            import Levenshtein
+
+        list1 = sorted(list(set1))
+        list2 = sorted(list(set2))
+        return Levenshtein.distance(str(list1), str(list2))
+
+    @staticmethod
+    def describe(set1, set2):
+        union = set1 | set2
+        intersect = set1 & set2
+        diff1 = set1 - set2
+        diff2 = set2 - set1
+        desc_dict = {
+            'len(set1)': len(set1),
+            'len(set2)': len(set2),
+            'len(union)': len(union),
+            'len(intersect)': len(intersect),
+            'len(diff1)': len(diff1),
+            'len(diff2)': len(diff2),
+            'diff1': sorted(diff1),
+            'diff2': sorted(diff2),
+        }
+        short_cols = [k for k, v in desc_dict.items() if not isinstance(v, list)]
+        long_cols = [k for k in desc_dict if k not in short_cols]
+        import pandas as pd
+        df = pd.DataFrame([desc_dict], index=None)[short_cols].transpose()
+        print(df.to_string(header=False))
+
+        long_df = pd.DataFrame([desc_dict])[long_cols]
+        print(long_df.to_string(index=False))
+        import pdb;
+        pdb.set_trace()
+
+        return desc_dict
+
+
 def get_set_f1(ground_truth_set, predicted_set, report_percentage=True):
+    ground_truth_set = set(ground_truth_set)
+    predicted_set = set(predicted_set)
+
     true_positives = len(ground_truth_set.intersection(predicted_set))
     false_positives = len(predicted_set.difference(ground_truth_set))
     false_negatives = len(ground_truth_set.difference(predicted_set))
@@ -152,6 +215,7 @@ def get_set_f1(ground_truth_set, predicted_set, report_percentage=True):
         f1 *= 100
     return f1
 
+
 def get_set_edit_distance(set1, set2):
     try:
         import Levenshtein
@@ -163,6 +227,7 @@ def get_set_edit_distance(set1, set2):
     list1 = sorted(list(set1))
     list2 = sorted(list(set2))
     return Levenshtein.distance(str(list1), str(list2))
+
 
 def dict_diff(dict0, dict1, note=''):
     if isinstance(dict0, dict) and isinstance(dict1, dict):
@@ -194,6 +259,15 @@ def dict_diff(dict0, dict1, note=''):
     else:
         if dict0 != dict1:
             yield (dict0, dict1, note)
+
+
+def if_significantly_different(result1: list, result2: list, P_VALUE_THRES=0.05):
+    from scipy import stats
+    import numpy as np
+
+    score, p_value = stats.ttest_ind(result1, np.array(result2), equal_var=False)
+    if_sign = p_value <= P_VALUE_THRES
+    return if_sign
 
 
 def reorder(_x, order):
