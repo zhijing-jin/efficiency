@@ -310,7 +310,7 @@ def write_dict_to_csv(data, file, verbose=False, mode='w'):
 
     fieldnames = data[0].keys()
     lines = fread(file, verbose=False)
-    existing = len(lines) >= 2
+    existing = len(lines) >= 1
     if mode == 'a':
         if existing:
             fieldnames_existing = lines[0].keys()
@@ -374,6 +374,7 @@ def get_git_version():
 
 
 def verbalize_list_of_options(choices, connective=['and', 'or'][-1], add_comma_if_len=[2,3][-1],
+                              last_comma=False,
                               wrap_choices=['', '"'][-1]):
 
     choices = [f'{wrap_choices}{i}{wrap_choices}' for i in choices]
@@ -382,7 +383,10 @@ def verbalize_list_of_options(choices, connective=['and', 'or'][-1], add_comma_i
     if len(choices) < add_comma_if_len:
         choices = ' '.join(choices)
     else:
-        choices = ', '.join(choices)
+        if last_comma:
+            choices = ', '.join(choices)
+        else:
+            choices = ' '.join([', '.join(choices[:-1]), choices[-1]])
     return choices
 
 
@@ -400,19 +404,50 @@ def print_df_value_count(df, columns=None):
         print()
 
 
-def pivot_df(df, rows='query_type', columns='model_version'):
-    import pdb;pdb.set_trace()
-    pivot_df = df.pivot_table(index=rows, columns=columns, values='score', aggfunc='first')
+def pivot_df(df, rows='query_type', columns='model_version', score_col='score', verbose=True):
+    pivot_df = df.pivot_table(index=rows, columns=columns, values=score_col, aggfunc='first')
 
     pivot_df.reset_index(inplace=True)
     pivot_df.fillna('---', inplace=True)
     pivot_df.columns.name = None
 
-    desired_order = sorted(df[differ_by].unique().tolist())
+    desired_order = sorted(df[rows].unique().tolist())
     pivot_df.set_index(rows, inplace=True)
     pivot_df = pivot_df.reindex(desired_order)
     pivot_df.reset_index(inplace=True)
+    if verbose: print(pivot_df)
     return pivot_df
+
+def get_res_by_group(df, groupby_key, result_key='score', verbose=True, score_is_percentage=True,
+                     return_obj=['group_dict', 'consistency_rate'][0]):
+    # Group by 'group' column and count the occurrences of each value in the 'result' column
+    g = df.groupby(groupby_key)[result_key]
+    multiply = 100 if score_is_percentage else 1
+    dff = round(g.mean() * multiply, 2).reset_index()
+    dff['count'] = g.count().to_list()
+    if verbose: print(dff)
+    return dff
+
+    g_counts = df.groupby(groupby_key)[result_key].value_counts()
+    g_counts.name = 'performance'  # otherwise, there will be an error saying that `result_key` is used
+    # for both the name of the pd.Series object, and a column name
+    g_totals = g_counts.groupby(groupby_key).sum()
+    g_perc = round(g_counts / g_totals * 100, 2)
+    g_major = g_perc.groupby(groupby_key).max()
+    consistency_rate = round(g_major.mean(), 2)
+
+    if return_obj == 'group_dict':
+        g_perc_clean = g_perc.drop([False],
+                                   level=result_key, errors='ignore')
+        # dff = g_perc_clean.reset_index() # turn into df
+        # g_perc_clean.to_csv(performance_file)
+
+        print(g_perc_clean)
+        # print('[Info] The above results are saved to', performance_file)
+
+        return g_perc_clean.to_dict()
+    elif return_obj == 'consistency_rate':
+        return consistency_rate
 
 
 def gpu_mem(gpu_id=0):
