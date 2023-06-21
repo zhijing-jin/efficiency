@@ -371,7 +371,7 @@ class Chatbot:
 
     def dialog_history_to_str(self, pure_completion_mode=False, ):
         dialog_history = [turn for turn in self.dialog_history
-                          if not ((turn['role'] == 'system') and self.system_is_default)]
+                        if not ((turn['role'] == 'system') and self.system_is_default)]
 
         if not self.if_newer_engine:
             # dialog_history = [turn for turn in dialog_history if not (turn['role'] == 'system')]
@@ -477,8 +477,9 @@ class Chatbot:
     def ask(self, *args, delta_time=5, **kwargs):
         def repeat():
             self.print_cost_and_rates()
-            
+            import time
             time.sleep(delta_time)
+
             return self.ask(*args, delta_time=2*delta_time, **kwargs)
 
         def api_error(e):
@@ -541,7 +542,6 @@ class Chatbot:
         except openai.error.InvalidRequestError as e:
             print(f'[Error] InvalidRequestError: {e}')
             import pdb;
-            print(self.dialog_history)
             pdb.set_trace()
             if len(self.dialog_history) > 10:
                 import pdb;
@@ -555,20 +555,19 @@ class Chatbot:
             return await api_error(e)
         except Exception as e:
             print(f'[Error] Unknown exception when calling openai: {e}')
-            # raise e
+            # raise e # if there is an unknown error, we should stop the program
             return await repeat() # sometimes we get: `[Error] Unknown exception when calling openai: The server is overloaded or not ready yet.` So we will just try again...
 
     async def araw_query(self, question,
-                  turn_off_cache=False, valid_ways=['cache', 'api_call'],
-                  continued_questions=False,
-                  sentence_completion_mode=False,
-                  max_tokens=None, stop_sign="\nQ: ",
-                  model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
-                  engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
-                  enable_pdb=False, verbose=1, only_response=True, disable_system_role=False,
-                  save_cache_with_system_role=False,
-                  temperature=0.,
-                ):
+                system_prompt=None,
+                turn_off_cache=False, valid_ways=['cache', 'api_call'],
+                continued_questions=False,
+                max_tokens=None, stop_sign="\nQ: ",
+                model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
+                engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
+                enable_pdb=False, verbose=1, only_response=True,
+                temperature=0.,
+            ):
         if verbose < 0 or verbose > 2:
             raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
                 
@@ -577,7 +576,13 @@ class Chatbot:
 
         if temperature != 0. and not turn_off_cache:
             raise ValueError('turn_off_cache must be True when temperature != 0.')
-
+        
+        if system_prompt is not None:
+            self.set_system_prompt(system_prompt)
+        if model_version is not None:
+            if model_version != self.model_version:
+                turn_off_cache = True
+        
         enable_api = 'api_call' in valid_ways
         if model_version is not None:
             engine = self.model_version2engine.get(model_version, model_version)
@@ -591,24 +596,18 @@ class Chatbot:
         verbose = 2 if enable_pdb else verbose
 
         if_newer_engine = engine.startswith('gpt-3.5') or engine.startswith('gpt-4')
+        self.if_newer_engine = if_newer_engine
 
         if not continued_questions:
             self.clear_dialog_history()
 
         self.dialog_history.append({"role": "user", "content": question}, )
-        if not if_newer_engine:
-            if sentence_completion_mode:
-                if disable_system_role:
-                    prompt = question
-                else:
-                    prompt = '\n'.join([self.system_prompt, question])
-            else:
-                prompt = self.dialog_history_to_str(disable_system_role=disable_system_role)
-        else:
-            prompt = question
 
-        cache_input = prompt if save_cache_with_system_role else question
+        prompt = self.dialog_history_to_str()
+        cache_input = prompt
+
         if enable_pdb:
+            print(cache_input)
             import pdb;
             pdb.set_trace()
         if (cache_input in self.cache) & (not turn_off_cache):
@@ -648,40 +647,43 @@ class Chatbot:
         else:
             response_text = ''
 
-        if if_newer_engine:
-            output = f"S: {self.dialog_history[0]['content']}\n\n" \
-                    f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
-        else:
-            output = f"{prompt} {response_text}\n"
         self.dialog_history.append({"role": "assistant", "content": response_text}, )
 
         if verbose > 1:
             print()
-            print(output)
-
-        self.dialog_history.append({"role": "assistant", "content": response_text}, )
+            print(self.dialog_history_to_str())
 
         if enable_pdb:
             import pdb;
             pdb.set_trace()
 
         if enable_api:
-            self.cache.save_cache(cache_input, response_text)
+            if not turn_off_cache:
+                self.cache.save_cache(cache_input, response_text)
 
         if only_response:
             return response_text
-        return response_text, output
+        return response_text #, output QUES: why is there an ouptut, you removed it in the previous commits?
     
     def raw_query(self, question,
-                  system_prompt=None,
-                  turn_off_cache=False, valid_ways=['cache', 'api_call'],
-                  continued_questions=False,
-                  max_tokens=None, stop_sign="\nQ: ",
-                  model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
-                  engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
-                  enable_pdb=False, verbose=True, only_response=True, disable_system_role=False,
-                  save_cache_with_system_role=False,
-                  ):
+                system_prompt=None,
+                turn_off_cache=False, valid_ways=['cache', 'api_call'],
+                continued_questions=False,
+                max_tokens=None, stop_sign="\nQ: ",
+                model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
+                engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
+                enable_pdb=False, verbose=1, only_response=True,
+                temperature=0.,
+            ):
+        if verbose < 0 or verbose > 2:
+            raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
+                
+        if temperature < 0. or temperature > 1.:
+            raise ValueError('temperature must be between 0 and 1.')
+
+        if temperature != 0. and not turn_off_cache:
+            raise ValueError('turn_off_cache must be True when temperature != 0.')
+        
         if system_prompt is not None:
             self.set_system_prompt(system_prompt)
         if model_version is not None:
@@ -752,11 +754,7 @@ class Chatbot:
         else:
             response_text = ''
 
-        if if_newer_engine:
-            output = f"S: {self.dialog_history[0]['content']}\n\n" \
-                     f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
-        else:
-            output = f"{prompt} {response_text}\n"
+        self.dialog_history.append({"role": "assistant", "content": response_text}, )
 
         if verbose > 1:
             print()
@@ -768,11 +766,11 @@ class Chatbot:
 
         if enable_api:
             if not turn_off_cache:
-                self.save_cache(cache_input, response_text)
+                self.cache.save_cache(cache_input, response_text)
 
         if only_response:
             return response_text
-        return response_text, output
+        return response_text #, output QUES: why is there an ouptut, you removed it in the previous commits?
 
 def main():
     raw_text = 'Hello, world. Here are two people with M.A. degrees from UT Austin. This is Mr. Mike.'
