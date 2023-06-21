@@ -1,5 +1,11 @@
 from __future__ import unicode_literals, print_function
+import time
+import multiprocessing
+
+
+
 from efficiency.log import show_var
+
 
 
 class NLP:
@@ -174,7 +180,115 @@ class Translator:
             langs = pyc_langs
 
         return langs
+    
+class APICall:
+    def __init__(self, start_time, end_time, prompt_tokens, completion_tokens, model):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.prompt_tokens = prompt_tokens
+        self.completion_tokens = completion_tokens
+        self.model = model
+    
+class APICallTracker:
+    def __init__(self):
+        self.calls = []
+        self.tokens_per_engine = {}
+        self.start_time = None
+        self.end_time = None
+        self.num_tokens = 0
+        self.num_requests = 0
+        self.l = multiprocessing.Lock()
+    
+    def add_call(self, call: APICall):
+        with self.l:
+            if call.model not in self.tokens_per_engine:
+                self.tokens_per_engine[call.model] = [0, 0]
+            self.tokens_per_engine[call.model][0] += call.prompt_tokens
+            self.tokens_per_engine[call.model][1] += call.completion_tokens
 
+            self.num_tokens += call.prompt_tokens + call.completion_tokens
+            self.num_requests += 1
+            
+            if self.start_time is None or call.start_time < self.start_time:
+                self.start_time = call.start_time
+            if self.end_time is None or call.end_time > self.end_time:
+                self.end_time = call.end_time
+
+            self.calls.append(call)
+    
+    def tokens_per_second(self):
+        with self.l:
+            if self.start_time is None or self.end_time is None:
+                return 0.0
+
+            total_tokens = 0
+            for tokens in self.tokens_per_engine.values():
+                total_tokens += tokens[0] + tokens[1]
+            return total_tokens / (self.end_time - self.start_time)
+        
+    def requests_per_second(self):
+        with self.l:
+            if self.start_time is None or self.end_time is None:
+                return 0.0
+
+            return len(self.calls) / (self.end_time - self.start_time)
+        
+class APICallCache:
+    def __init__(self, gpt_files, output_file):
+        self.l = multiprocessing.Lock()
+
+        self.gpt_files = gpt_files
+        self.output_file = output_file
+
+        self.cache = self.load_cache()
+    
+    # implement dict interface with thread-safe locking
+    def __getitem__(self, key):
+        with self.l:
+            return self.cache[key]
+    
+    def __setitem__(self, key, value):
+        with self.l:
+            self.cache[key] = value
+        
+    def __contains__(self, key):
+        with self.l:
+            return key in self.cache
+    
+    def __len__(self):
+        with self.l:
+            return len(self.cache)
+    
+    def __iter__(self):
+        with self.l:
+            return iter(self.cache)
+    
+    def __delitem__(self, key):
+        with self.l:
+            del self.cache[key]
+
+    def save_cache(self, question, response_text):
+        with self.l:
+            if (not (question in self.cache)) and response_text:
+                self.cache[question] = response_text
+                datum = [{
+                    'pred': response_text,
+                    'query': question,
+                }]
+                from efficiency.log import write_dict_to_csv
+                write_dict_to_csv(datum, self.output_file, mode='a')
+
+    def load_cache(self):
+        with self.l:
+            cache = {}
+            from efficiency.log import fread
+            for file in self.gpt_files:
+                data = fread(file, verbose=False)
+                cache.update({i[f'query{q_i}']: i[f'pred{q_i}'] for i in data
+                            for q_i in list(range(10)) + ['']
+                            if f'query{q_i}' in i})
+            cache = {k: v for k, v in cache.items() if v}  # there are cases where the response is empty
+            return cache
 
 class Chatbot:
     model_version2engine = {
@@ -205,9 +319,14 @@ class Chatbot:
 
     def __init__(self, model_version='gpt3.5', max_tokens=100, output_file=None, output_folder='./',
                  system_prompt="You are a helpful assistant.", cache_files=[],
-                 openai_key_alias='OPENAI_API_KEY', openai_org_alias='OPENAI_ORG_ID', ):
+                 openai_key_alias='OPENAI_API_KEY', openai_org_alias='OPENAI_ORG_ID', tracker=None, cache=None):
         import os
         import openai
+        self.openai = openai
+
+        if tracker is None:
+            tracker = APICallTracker()
+
         api_key = os.environ[openai_key_alias]
         openai.api_key = api_key
         if openai_org_alias != 'OPENAI_ORG_ID':
@@ -218,14 +337,29 @@ class Chatbot:
         self.engine = self.model_version2engine.get(model_version, model_version)
         self.max_tokens = max_tokens
         self.system_prompt = system_prompt
-        self.output_file = f'{output_folder}/.cache_{model_version}.csv' if output_file is None else output_file
-        self.gpt_files = cache_files + [output_file]
 
-        self.openai = openai
-        self.num_tokens = []
-        self.cache = self.load_cache()
+        if cache is None:
+            output_file = f'{output_folder}/.cache_{model_version}.csv' if output_file is None else output_file
+            gpt_files = cache_files + [output_file]
+
+            cache = APICallCache(gpt_files, output_file)
+
+        self.cache = cache
+
         # self.list_all_models()
         self.clear_dialog_history()
+
+        self.tracker = tracker
+    
+    def clone(self):
+        return Chatbot(
+            model_version=self.model_version,
+            max_tokens=self.max_tokens,
+            system_prompt=self.system_prompt,
+            tracker=self.tracker,
+            cache=self.cache,
+        )
+
 
     def clear_dialog_history(self):
         self.dialog_history = [
@@ -262,51 +396,85 @@ class Chatbot:
 
     @property
     def _total_cost(self):
-        default_price = self.engine2pricing['davinci']
-        return sum(self.num_tokens) // 1000 * self.engine2pricing.get(self.engine, default_price)
+        price = 0.
+        for call in self.tracker.calls:
+            price += (call.prompt_tokens + call.completion_tokens) / 1000 * self.engine2pricing[self.engine]
+        return price
 
-    def print_cost(self):
-        print(f"[Info] Spent ${self._total_cost} for {sum(self.num_tokens)} tokens.")
+    def print_cost_and_rates(self):
+        print(f"[Info] Spent ${self._total_cost:.3f} for {self.tracker.num_tokens} tokens and {self.tracker.num_requests} requests. Throughput: {self.tracker.tokens_per_second():.1f} tokens/s and {self.tracker.requests_per_second():.1f} requests/second.")
 
-    def save_cache(self, question, response_text):
-        if (not (question in self.cache)) and response_text:
-            self.cache[question] = response_text
-            datum = [{
-                'pred': response_text,
-                'query': question,
-            }]
-            from efficiency.log import write_dict_to_csv
-            write_dict_to_csv(datum, self.output_file, mode='a')
+    import asyncio
 
-    def load_cache(self):
-        cache = {}
-        from efficiency.log import fread
-        for file in self.gpt_files:
-            data = fread(file, verbose=False)
-            cache.update({i[f'query{q_i}']: i[f'pred{q_i}'] for i in data
-                          for q_i in list(range(10)) + ['']
-                          if f'query{q_i}' in i})
-        cache = {k: v for k, v in cache.items() if v}  # there are cases where the response is empty
-        return cache
+    async def semaphore_gather(self, num, coros, return_exceptions=True):
+        import asyncio
+        semaphore = asyncio.Semaphore(num)
 
-    def ask(self, *args, **kwargs):
+        async def _wrap_coro(coro):
+            async with semaphore:
+                return await coro
+
+        return await asyncio.gather(
+            *(_wrap_coro(coro) for coro in coros), return_exceptions=return_exceptions
+        )
+
+    async def _ask_n(self, questions, num_parallel=100, **kwargs):
+        return await self.semaphore_gather(num_parallel, [
+            # create a new chatbot for each question, but copy the cache, tracker, model_version, etc.
+            self.clone().aask(q, **kwargs)
+                for q in questions
+        ], return_exceptions=True)
+
+    def ask_n(self, questions, num_parallel=100, **kwargs):
+        """
+        Ask multiple questions in parallel. This is useful for asking a large number of questions.
+
+        :param questions: a list of questions
+        :param num_parallel: max number of requests to send in parallel
+        :param kwargs: other arguments to pass to ask()
+        :return: list of answers
+
+        Example:
+        ```python
+        from efficiency.nlp import Chatbot
+
+        bot = Chatbot(model_version='gpt-3.5-turbo')
+
+        predictions = bot.ask_n([f"Write this number: '{i}'. Then 20 sentences about why it's your favorite number?" for i in range(0, 3000)], verbose=0, num_parallel=90)
+        print(f'Length of predictions: {len(predictions)}')
+        print(f'Sum of chars in predictions: {sum([len(p) for p in predictions])}')
+
+        bot.print_cost_and_rates()
+        ```
+        """
+
+        import asyncio
+        return asyncio.run(self._ask_n(questions, num_parallel=num_parallel, **kwargs))
+
+    def ask(self, *args, delta_time=5, **kwargs):
         def repeat():
-            sec = 100
-            print(f'[Info] openai.error.RateLimitError. Wait for {sec} seconds')
-            self.print_cost()
+            self.print_cost_and_rates()
+            
+            time.sleep(delta_time)
+            return self.ask(*args, delta_time=2*delta_time, **kwargs)
+
+        def api_error(e):
+            print(f'[Info] openai.error.APIError: {e}. Wait for {delta_time} seconds.')
+            return repeat()
+        
+        def rate_limit_error(e):
+            print(f'[Info] openai.error.RateLimitError: {e}. Wait for {delta_time} seconds.')
             '''
             Default rate limits for gpt-4/gpt-4-0314 are 40k TPM and 200 RPM. Default rate limits for gpt-4-32k/gpt-4-32k-0314 are 80k PRM and 400 RPM. 
             https://platform.openai.com/docs/guides/rate-limits/overview
             '''
-
-            import time
-            time.sleep(sec)
-            return self.ask(*args, **kwargs)
+            return repeat()
 
         import openai
         try:
             return self.raw_query(*args, **kwargs)
-        except openai.error.InvalidRequestError:
+        except openai.error.InvalidRequestError as e:
+            print(f'[Error] InvalidRequestError: {e}')
             import pdb;
             pdb.set_trace()
             if len(self.dialog_history) > 10:
@@ -314,25 +482,79 @@ class Chatbot:
                 pdb.set_trace()
             for turn_i, turn in enumerate(self.dialog_history):
                 if turn['role'] == 'assistant':
-                    turn['content'] = turn['content'][:1000]
+                    turn['content'] = turn['content'][:1000] # TODO: QUES: DAVE: why 1000? @zhijing-jin
+        except openai.error.RateLimitError as e:
+            return rate_limit_error(e)
+        except openai.error.APIError as e:
+            return api_error(e)
+        except Exception as e:
+            print(f'[Error] Unknown exception when calling openai: {e}')
+            # raise e # if there is an unknown error, we should stop the program
+            return repeat() # sometimes we get: `[Error] Unknown exception when calling openai: The server is overloaded or not ready yet.` So we will just try again...
+    
+    async def aask(self, *args, delta_time=5, **kwargs):
+        async def repeat():
+            self.print_cost_and_rates()
+            import asyncio
+            await asyncio.sleep(delta_time)
 
-        except openai.error.RateLimitError:
-            return repeat()
-        except openai.error.APIError:
-            return repeat()
-        # except:
-        #     repeat()
+            return await self.aask(*args, delta_time=2*delta_time, **kwargs)
 
-    def raw_query(self, question,
+        async def api_error(e):
+            print(f'[Info] openai.error.APIError: {e}. Wait for {delta_time} seconds.')
+            return await repeat()
+        
+        async def rate_limit_error(e):
+            print(f'[Info] openai.error.RateLimitError: {e}. Wait for {delta_time} seconds.')
+            '''
+            Default rate limits for gpt-4/gpt-4-0314 are 40k TPM and 200 RPM. Default rate limits for gpt-4-32k/gpt-4-32k-0314 are 80k PRM and 400 RPM. 
+            https://platform.openai.com/docs/guides/rate-limits/overview
+            '''
+            return await repeat()
+
+        import openai
+        try:
+            return await self.araw_query(*args, **kwargs)
+        except openai.error.InvalidRequestError as e:
+            print(f'[Error] InvalidRequestError: {e}')
+            import pdb;
+            print(self.dialog_history)
+            pdb.set_trace()
+            if len(self.dialog_history) > 10:
+                import pdb;
+                pdb.set_trace()
+            for turn_i, turn in enumerate(self.dialog_history):
+                if turn['role'] == 'assistant':
+                    turn['content'] = turn['content'][:1000] # TODO: QUES: DAVE: why 1000? @zhijing-jin
+        except openai.error.RateLimitError as e:
+            return await rate_limit_error(e)
+        except openai.error.APIError as e:
+            return await api_error(e)
+        except Exception as e:
+            print(f'[Error] Unknown exception when calling openai: {e}')
+            # raise e
+            return await repeat() # sometimes we get: `[Error] Unknown exception when calling openai: The server is overloaded or not ready yet.` So we will just try again...
+
+    async def araw_query(self, question,
                   turn_off_cache=False, valid_ways=['cache', 'api_call'],
                   continued_questions=False,
                   sentence_completion_mode=False,
                   max_tokens=None, stop_sign="\nQ: ",
                   model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
                   engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
-                  enable_pdb=False, verbose=True, only_response=True, disable_system_role=False,
+                  enable_pdb=False, verbose=1, only_response=True, disable_system_role=False,
                   save_cache_with_system_role=False,
-                  ):
+                  temperature=0.,
+                ):
+        if verbose < 0 or verbose > 2:
+            raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
+                
+        if temperature < 0. or temperature > 1.:
+            raise ValueError('temperature must be between 0 and 1.')
+
+        if temperature != 0. and not turn_off_cache:
+            raise ValueError('turn_off_cache must be True when temperature != 0.')
+
         enable_api = 'api_call' in valid_ways
         if model_version is not None:
             engine = self.model_version2engine.get(model_version, model_version)
@@ -343,7 +565,7 @@ class Chatbot:
         self.engine = engine  # to be called in print_cost()
 
         max_tokens = self.max_tokens if max_tokens is None else max_tokens
-        verbose = True if enable_pdb else verbose
+        verbose = 2 if enable_pdb else verbose
 
         if_newer_engine = engine.startswith('gpt-3.5') or engine.startswith('gpt-4')
 
@@ -373,11 +595,126 @@ class Chatbot:
             response_text = response_text.strip()
             if verbose: print(f'[Info] Using cache for "{cache_input[:10]}..."')
         elif enable_api:
+            start_time = time.time()
+
+            openai = self.openai
+            if if_newer_engine:
+                response = await openai.ChatCompletion.acreate(
+                    model=engine,
+                    temperature=0,
+                    max_tokens=max_tokens,
+                    messages=self.dialog_history,
+                )
+                response_text = response['choices'][0]['message']['content']
+            else:
+                response = await openai.Completion.acreate(
+                    model=engine,
+                    # prompt=[question],
+                    prompt=prompt,
+                    max_tokens=max_tokens,
+                    temperature=0,
+                    stop=stop_sign,
+                )
+                response_text = response['choices'][0]['text']
+
+            end_time = time.time()
+            self.tracker.add_call(APICall(start_time, end_time, response['usage']['prompt_tokens'], response['usage']['completion_tokens'], model=engine))
+
+            response_text = response_text.strip()
+            if verbose: self.print_cost_and_rates()
+        else:
+            response_text = ''
+
+        if if_newer_engine:
+            output = f"S: {self.dialog_history[0]['content']}\n\n" \
+                    f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
+        else:
+            output = f"{prompt} {response_text}\n"
+
+        if verbose > 1:
+            print()
+            print(output)
+
+        self.dialog_history.append({"role": "assistant", "content": response_text}, )
+
+        if enable_pdb:
+            import pdb;
+            pdb.set_trace()
+
+        if enable_api:
+            self.cache.save_cache(cache_input, response_text)
+
+        if only_response:
+            return response_text
+        return response_text, output
+    
+    def raw_query(self, question,
+                  turn_off_cache=False, valid_ways=['cache', 'api_call'],
+                  continued_questions=False,
+                  sentence_completion_mode=False,
+                  max_tokens=None, stop_sign="\nQ: ",
+                  model_version=[None, 'gpt3', 'gpt3.5', 'gpt4'][0],
+                  engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
+                  enable_pdb=False, verbose=1, only_response=True, disable_system_role=False,
+                  save_cache_with_system_role=False,
+                  temperature=0.,
+                ):
+        if verbose < 0 or verbose > 2:
+            raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
+                
+        if temperature < 0. or temperature > 1.:
+            raise ValueError('temperature must be between 0 and 1.')
+
+        if temperature != 0. and not turn_off_cache:
+            raise ValueError('turn_off_cache must be True when temperature != 0.')
+
+        enable_api = 'api_call' in valid_ways
+        if model_version is not None:
+            engine = self.model_version2engine.get(model_version, model_version)
+        elif engine is not None:
+            engine = engine
+        else:
+            engine = self.engine
+        self.engine = engine  # to be called in print_cost()
+
+        max_tokens = self.max_tokens if max_tokens is None else max_tokens
+        verbose = 2 if enable_pdb else verbose
+
+        if_newer_engine = engine.startswith('gpt-3.5') or engine.startswith('gpt-4')
+
+        if not continued_questions:
+            self.clear_dialog_history()
+
+        self.dialog_history.append({"role": "user", "content": question}, )
+        if not if_newer_engine:
+            if sentence_completion_mode:
+                if disable_system_role:
+                    prompt = question
+                else:
+                    prompt = '\n'.join([self.system_prompt, question])
+            else:
+                prompt = self.dialog_history_to_str(disable_system_role=disable_system_role)
+        else:
+            prompt = question
+
+        cache_input = prompt if save_cache_with_system_role else question
+        if enable_pdb:
+            import pdb;
+            pdb.set_trace()
+        if (cache_input in self.cache) & (not turn_off_cache):
+            response_text = self.cache[cache_input]
+            if not if_newer_engine:
+                response_text = str(response_text).split(stop_sign, 1)[0]
+            response_text = response_text.strip()
+            if verbose: print(f'[Info] Using cache for "{cache_input[:10]}..."')
+        elif enable_api:
+            start_time = time.time()
+
             openai = self.openai
             if if_newer_engine:
                 response = openai.ChatCompletion.create(
                     model=engine,
-                    temperature=0,
+                    temperature=temperature,
                     max_tokens=max_tokens,
                     messages=self.dialog_history,
                 )
@@ -388,23 +725,26 @@ class Chatbot:
                     # prompt=[question],
                     prompt=prompt,
                     max_tokens=max_tokens,
-                    temperature=0,
+                    temperature=temperature,
                     stop=stop_sign,
                 )
                 response_text = response['choices'][0]['text']
-            self.num_tokens.append(response['usage']["total_tokens"])
+
+            end_time = time.time()
+            self.tracker.add_call(APICall(start_time, end_time, response['usage']['prompt_tokens'], response['usage']['completion_tokens'], model=engine))
+
             response_text = response_text.strip()
-            if verbose: self.print_cost()
+            if verbose: self.print_cost_and_rates()
         else:
             response_text = ''
 
         if if_newer_engine:
             output = f"S: {self.dialog_history[0]['content']}\n\n" \
-                     f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
+                    f"Q: {self.dialog_history[-1]['content']}\n\nA: {response_text}\n"
         else:
             output = f"{prompt} {response_text}\n"
 
-        if verbose:
+        if verbose > 1:
             print()
             print(output)
 
@@ -414,12 +754,12 @@ class Chatbot:
             import pdb;
             pdb.set_trace()
 
-        if enable_api: self.save_cache(cache_input, response_text)
+        if enable_api:
+            self.cache.save_cache(cache_input, response_text)
 
         if only_response:
             return response_text
         return response_text, output
-
 
 def main():
     raw_text = 'Hello, world. Here are two people with M.A. degrees from UT Austin. This is Mr. Mike.'
