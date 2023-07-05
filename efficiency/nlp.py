@@ -358,7 +358,9 @@ class Chatbot:
             cache=self.cache,
         )
 
-    def set_system_prompt(self, system_prompt="You are a helpful assistant."):
+    def set_system_prompt(self, system_prompt):
+        if system_prompt is None:
+            system_prompt = "You are a helpful assistant."
         self.system_prompt = system_prompt
         self.system_is_default = system_prompt == "You are a helpful assistant."
 
