@@ -387,7 +387,7 @@ class Chatbot:
                         break
             self.dialog_history = dialog_history
         if pure_completion_mode:
-            dialog_history_text = turn['content']
+            dialog_history_text = '\n'.join(turn['content'] for turn in dialog_history) # TODO: error before but unsure if this is the right fix
         else:
             dialog_history_text = []
             for turn in dialog_history:
@@ -569,6 +569,7 @@ class Chatbot:
                 engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
                 enable_pdb=False, verbose=1, only_response=True,
                 temperature=0.,
+                pure_completion_mode=False,
             ):
         if verbose < 0 or verbose > 2:
             raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
@@ -605,7 +606,7 @@ class Chatbot:
 
         self.dialog_history.append({"role": "user", "content": question}, )
 
-        prompt = self.dialog_history_to_str()
+        prompt = self.dialog_history_to_str(pure_completion_mode=pure_completion_mode)
         cache_input = prompt
 
         if enable_pdb:
@@ -653,7 +654,7 @@ class Chatbot:
 
         if verbose > 1:
             print()
-            print(self.dialog_history_to_str())
+            print(self.dialog_history_to_str(pure_completion_mode=pure_completion_mode))
 
         if enable_pdb:
             import pdb;
@@ -676,6 +677,7 @@ class Chatbot:
                 engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
                 enable_pdb=False, verbose=1, only_response=True,
                 temperature=0.,
+                pure_completion_mode=False,
             ):
         if verbose < 0 or verbose > 2:
             raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
@@ -712,7 +714,7 @@ class Chatbot:
 
         self.dialog_history.append({"role": "user", "content": question}, )
 
-        prompt = self.dialog_history_to_str()
+        prompt = self.dialog_history_to_str(pure_completion_mode=pure_completion_mode)
         cache_input = prompt
 
         if enable_pdb:
@@ -760,7 +762,7 @@ class Chatbot:
 
         if verbose > 1:
             print()
-            print(self.dialog_history_to_str())
+            print(self.dialog_history_to_str(pure_completion_mode=pure_completion_mode))
 
         if enable_pdb:
             import pdb;
