@@ -432,7 +432,8 @@ class Chatbot:
     def _total_cost(self):
         price = 0.
         for call in self.tracker.calls:
-            price += (call.prompt_tokens + call.completion_tokens) / 1000 * self.engine2pricing[self.engine]
+            # price += (call.prompt_tokens + call.completion_tokens) / 1000 * self.engine2pricing[self.engine]
+            price = (call.prompt_tokens*self.engine2pricing[self.engine][0] + call.completion_tokens*self.engine2pricing[self.engine][1]) / 1000
         return price
 
     def print_cost_and_rates(self):
