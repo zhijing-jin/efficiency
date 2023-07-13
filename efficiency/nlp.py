@@ -302,17 +302,26 @@ class Chatbot:
         'gpt3.02': "babbage",
         'gpt3.01': "ada",
     }
+
+    # model -> (1000_input_tokens, 1000_output_tokens, 1000_training_tokens) prices
     engine2pricing = {
-        "gpt-3.5-turbo": 0.002,
-        "gpt-4-32k": 0.12,
-        "gpt-4": 0.06,
-        "text-davinci-003": 0.0200,
-        "text-davinci-002": 0.0200,
-        "text-davinci-001": 0.0200,
-        "davinci": 0.0200,
-        "curie": 0.0020,
-        "babbage": 0.0005,
-        "ada": 0.0004,
+        'gpt-4': (0.03, 0.06, None),
+        'gpt-4-32k': (0.06, 0.12, None),
+
+        'gpt-3.5-turbo': (0.0015, 0.002, None),
+        'gpt-3.5-turbo-16k': (0.003, 0.004, None),
+
+        'gpt-3.5-turbo-0613': (0.0015, 0.002, None),
+        'gpt-3.5-turbo-0613-16k': (0.003, 0.004, None),
+
+        'ada': (0.0004, 0.0004, None),
+        'babbage': (0.0005, 0.0005, None),
+        'curie': (0.002, 0.002, None),
+        'davinci': (0.02, 0.02, None),
+
+        'text-davinci-001': (0.02, 0.02, None),
+        'text-davinci-002': (0.02, 0.02, None),
+        'text-davinci-003': (0.02, 0.02, None),
     }
 
     def __init__(self, model_version='gpt3.5', max_tokens=100, output_file=None, output_folder='./',
