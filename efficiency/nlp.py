@@ -194,6 +194,8 @@ class APICallTracker:
         self.start_time = None
         self.end_time = None
         self.num_tokens = 0
+        self.num_in_tokens = 0
+        self.num_out_tokens = 0
         self.num_requests = 0
         self.l = multiprocessing.Lock()
     
@@ -205,6 +207,8 @@ class APICallTracker:
             self.tokens_per_engine[call.model][1] += call.completion_tokens
 
             self.num_tokens += call.prompt_tokens + call.completion_tokens
+            self.num_in_tokens += call.prompt_tokens
+            self.num_out_tokens += call.completion_tokens
             self.num_requests += 1
             
             if self.start_time is None or call.start_time < self.start_time:
@@ -433,11 +437,11 @@ class Chatbot:
         price = 0.
         for call in self.tracker.calls:
             # price += (call.prompt_tokens + call.completion_tokens) / 1000 * self.engine2pricing[self.engine]
-            price = (call.prompt_tokens*self.engine2pricing[self.engine][0] + call.completion_tokens*self.engine2pricing[self.engine][1]) / 1000
+            price += (call.prompt_tokens*self.engine2pricing[self.engine][0] + call.completion_tokens*self.engine2pricing[self.engine][1]) / 1000
         return price
 
     def print_cost_and_rates(self):
-        print(f"[Info] Spent ${self._total_cost:.3f} for {self.tracker.num_tokens} tokens and {self.tracker.num_requests} requests. Throughput: {self.tracker.tokens_per_second():.1f} tokens/s and {self.tracker.requests_per_second():.1f} requests/second.")
+        print(f"[Info] Spent ${self._total_cost:.3f} for {self.tracker.num_tokens} tokens (in: {self.tracker.num_in_tokens}, out: {self.tracker.num_out_tokens}) and {self.tracker.num_requests} requests. Throughput: {self.tracker.tokens_per_second():.1f} tokens/s and {self.tracker.requests_per_second():.1f} requests/second.")
 
     import asyncio
 
@@ -486,7 +490,7 @@ class Chatbot:
         import asyncio
         return asyncio.run(self._ask_n(questions, num_parallel=num_parallel, **kwargs))
 
-    def ask(self, *args, delta_time=5, **kwargs):
+    def ask(self, *args, delta_time=10, **kwargs):
         def repeat():
             self.print_cost_and_rates()
             import time
@@ -528,7 +532,7 @@ class Chatbot:
             # raise e # if there is an unknown error, we should stop the program
             return repeat() # sometimes we get: `[Error] Unknown exception when calling openai: The server is overloaded or not ready yet.` So we will just try again...
     
-    async def aask(self, *args, delta_time=5, **kwargs):
+    async def aask(self, *args, delta_time=10, **kwargs):
         async def repeat():
             self.print_cost_and_rates()
             import asyncio
