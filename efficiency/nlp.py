@@ -18,6 +18,10 @@ class NLP:
         except:
             self.nlp.add_pipe('sentencizer')
 
+    def detokenize(self, text):
+        # Reference: Use the model https://github.com/julianmichael/jjm/blob/master/jjm/src/ling/Text.scala
+        pass
+
     def sent_tokenize(self, text):
         doc = self.nlp(text)
         sentences = [str(sent).strip() for sent in doc.sents]
