@@ -194,6 +194,8 @@ class APICallTracker:
         self.start_time = None
         self.end_time = None
         self.num_tokens = 0
+        self.num_in_tokens = 0
+        self.num_out_tokens = 0
         self.num_requests = 0
         self.l = multiprocessing.Lock()
     
@@ -205,6 +207,8 @@ class APICallTracker:
             self.tokens_per_engine[call.model][1] += call.completion_tokens
 
             self.num_tokens += call.prompt_tokens + call.completion_tokens
+            self.num_in_tokens += call.prompt_tokens
+            self.num_out_tokens += call.completion_tokens
             self.num_requests += 1
             
             if self.start_time is None or call.start_time < self.start_time:
@@ -302,17 +306,26 @@ class Chatbot:
         'gpt3.02': "babbage",
         'gpt3.01': "ada",
     }
+
+    # model -> (1000_input_tokens, 1000_output_tokens, 1000_training_tokens) prices
     engine2pricing = {
-        "gpt-3.5-turbo": 0.002,
-        "gpt-4-32k": 0.12,
-        "gpt-4": 0.06,
-        "text-davinci-003": 0.0200,
-        "text-davinci-002": 0.0200,
-        "text-davinci-001": 0.0200,
-        "davinci": 0.0200,
-        "curie": 0.0020,
-        "babbage": 0.0005,
-        "ada": 0.0004,
+        'gpt-4': (0.03, 0.06, None),
+        'gpt-4-32k': (0.06, 0.12, None),
+
+        'gpt-3.5-turbo': (0.0015, 0.002, None),
+        'gpt-3.5-turbo-16k': (0.003, 0.004, None),
+
+        'gpt-3.5-turbo-0613': (0.0015, 0.002, None),
+        'gpt-3.5-turbo-0613-16k': (0.003, 0.004, None),
+
+        'ada': (0.0004, 0.0004, None),
+        'babbage': (0.0005, 0.0005, None),
+        'curie': (0.002, 0.002, None),
+        'davinci': (0.02, 0.02, None),
+
+        'text-davinci-001': (0.02, 0.02, None),
+        'text-davinci-002': (0.02, 0.02, None),
+        'text-davinci-003': (0.02, 0.02, None),
     }
 
     def __init__(self, model_version='gpt3.5', max_tokens=100, output_file=None, output_folder='./',
@@ -387,7 +400,7 @@ class Chatbot:
                         break
             self.dialog_history = dialog_history
         if pure_completion_mode:
-            dialog_history_text = turn['content']
+            dialog_history_text = '\n'.join(turn['content'] for turn in dialog_history) # TODO: error before but unsure if this is the right fix
         else:
             dialog_history_text = []
             for turn in dialog_history:
@@ -423,11 +436,12 @@ class Chatbot:
     def _total_cost(self):
         price = 0.
         for call in self.tracker.calls:
-            price += (call.prompt_tokens + call.completion_tokens) / 1000 * self.engine2pricing[self.engine]
+            # price += (call.prompt_tokens + call.completion_tokens) / 1000 * self.engine2pricing[self.engine]
+            price += (call.prompt_tokens*self.engine2pricing[self.engine][0] + call.completion_tokens*self.engine2pricing[self.engine][1]) / 1000
         return price
 
     def print_cost_and_rates(self):
-        print(f"[Info] Spent ${self._total_cost:.3f} for {self.tracker.num_tokens} tokens and {self.tracker.num_requests} requests. Throughput: {self.tracker.tokens_per_second():.1f} tokens/s and {self.tracker.requests_per_second():.1f} requests/second.")
+        print(f"[Info] Spent ${self._total_cost:.3f} for {self.tracker.num_tokens} tokens (in: {self.tracker.num_in_tokens}, out: {self.tracker.num_out_tokens}) and {self.tracker.num_requests} requests. Throughput: {self.tracker.tokens_per_second():.1f} tokens/s and {self.tracker.requests_per_second():.1f} requests/second.")
 
     import asyncio
 
@@ -476,7 +490,7 @@ class Chatbot:
         import asyncio
         return asyncio.run(self._ask_n(questions, num_parallel=num_parallel, **kwargs))
 
-    def ask(self, *args, delta_time=5, **kwargs):
+    def ask(self, *args, delta_time=10, **kwargs):
         def repeat():
             self.print_cost_and_rates()
             import time
@@ -518,7 +532,7 @@ class Chatbot:
             # raise e # if there is an unknown error, we should stop the program
             return repeat() # sometimes we get: `[Error] Unknown exception when calling openai: The server is overloaded or not ready yet.` So we will just try again...
     
-    async def aask(self, *args, delta_time=5, **kwargs):
+    async def aask(self, *args, delta_time=10, **kwargs):
         async def repeat():
             self.print_cost_and_rates()
             import asyncio
@@ -569,6 +583,7 @@ class Chatbot:
                 engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
                 enable_pdb=False, verbose=1, only_response=True,
                 temperature=0.,
+                pure_completion_mode=False,
             ):
         if verbose < 0 or verbose > 2:
             raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
@@ -605,7 +620,7 @@ class Chatbot:
 
         self.dialog_history.append({"role": "user", "content": question}, )
 
-        prompt = self.dialog_history_to_str()
+        prompt = self.dialog_history_to_str(pure_completion_mode=pure_completion_mode)
         cache_input = prompt
 
         if enable_pdb:
@@ -653,7 +668,7 @@ class Chatbot:
 
         if verbose > 1:
             print()
-            print(self.dialog_history_to_str())
+            print(self.dialog_history_to_str(pure_completion_mode=pure_completion_mode))
 
         if enable_pdb:
             import pdb;
@@ -676,6 +691,7 @@ class Chatbot:
                 engine=[None, "text-davinci-003", "gpt-3.5-turbo", "gpt-4-32k-0314", "gpt-4-0314", "gpt-4"][0],
                 enable_pdb=False, verbose=1, only_response=True,
                 temperature=0.,
+                pure_completion_mode=False,
             ):
         if verbose < 0 or verbose > 2:
             raise ValueError('verbose must be 0, 1 or 2. 0=quiet, 1=print cost and rates, 2=print cost, rates and response.')
@@ -712,7 +728,7 @@ class Chatbot:
 
         self.dialog_history.append({"role": "user", "content": question}, )
 
-        prompt = self.dialog_history_to_str()
+        prompt = self.dialog_history_to_str(pure_completion_mode=pure_completion_mode)
         cache_input = prompt
 
         if enable_pdb:
@@ -760,7 +776,7 @@ class Chatbot:
 
         if verbose > 1:
             print()
-            print(self.dialog_history_to_str())
+            print(self.dialog_history_to_str(pure_completion_mode=pure_completion_mode))
 
         if enable_pdb:
             import pdb;
