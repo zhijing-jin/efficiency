@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='efficiency',
-    version='1.31',
+    version='2.0',
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='A package for efficient programming',
