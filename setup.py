@@ -11,7 +11,7 @@ setup(
     description='A package for efficient programming',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    install_requires=['pandas', 'numpy'],
+    install_requires=['pandas', 'numpy', 'openai==0.28'],
     url='https://github.com/zhijing-jin/efficiency',
     author='Zhijing Jin'
 )
